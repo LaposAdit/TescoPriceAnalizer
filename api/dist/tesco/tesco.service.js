@@ -133,17 +133,12 @@ let TescoService = class TescoService {
             for (const { model, category } of models) {
                 const where = this.createWhereClause(sale);
                 const modelInstance = this.prisma[model];
-                const distinctProductIds = await modelInstance.findMany({
-                    where,
-                    select: { productId: true },
-                    distinct: ['productId'],
-                });
-                totalProducts += distinctProductIds.length;
-                const categoryProducts = await fetchLatestProducts(modelInstance, where, 0, distinctProductIds.length, category);
+                const categoryProducts = await fetchLatestProducts(modelInstance, where, skip, take, category);
+                totalProducts += categoryProducts.length;
                 allResults.push(...categoryProducts);
             }
             const totalPages = Math.ceil(totalProducts / pageSize);
-            const paginatedProducts = allResults.slice(skip, skip + take);
+            const paginatedProducts = allResults.slice(0, take);
             return {
                 totalPages,
                 totalProducts,
@@ -154,14 +149,9 @@ let TescoService = class TescoService {
         else {
             const model = this.getPrismaModel(category);
             const where = this.createWhereClause(sale);
-            const distinctProductIds = await model.findMany({
-                where,
-                select: { productId: true },
-                distinct: ['productId'],
-            });
-            const totalProducts = distinctProductIds.length;
-            const totalPages = Math.ceil(totalProducts / pageSize);
             const products = await fetchLatestProducts(model, where, skip, take, category);
+            const totalProducts = products.length;
+            const totalPages = Math.ceil(totalProducts / pageSize);
             return {
                 totalPages,
                 totalProducts,
@@ -302,37 +292,69 @@ let TescoService = class TescoService {
         ];
         const availableCategories = new Set(allCategories);
         const fetchProductsWithAnalytics = async (model, where, skip, take, category) => {
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
             const latestProducts = await model.findMany({
                 where,
                 skip,
                 take,
-                include: {
-                    promotions: true,
+                select: {
+                    id: true,
+                    productId: true,
+                    title: true,
+                    price: true,
+                    unitPrice: true,
+                    imageUrl: true,
+                    unitOfMeasure: true,
+                    isForSale: true,
+                    aisleName: true,
+                    superDepartmentName: true,
+                    promotions: {
+                        select: {
+                            promotionId: true,
+                            promotionType: true,
+                            startDate: true,
+                            endDate: true,
+                            offerText: true,
+                            attributes: true,
+                            promotionPrice: true,
+                        },
+                    },
+                    lastUpdated: true,
                 },
                 orderBy: { lastUpdated: 'desc' },
                 distinct: ['productId'],
             });
-            const productsWithAnalytics = await Promise.all(latestProducts.map(async (product) => {
+            const productPromises = latestProducts.map(async (product) => {
                 try {
-                    const analyticsResult = await model.aggregate({
-                        where: {
-                            productId: product.productId,
-                            lastUpdated: { gte: thirtyDaysAgo }
+                    const productHistory = await model.findMany({
+                        where: { productId: product.productId },
+                        select: {
+                            id: true,
+                            price: true,
+                            unitPrice: true,
+                            promotions: {
+                                select: {
+                                    promotionId: true,
+                                    promotionType: true,
+                                    startDate: true,
+                                    endDate: true,
+                                    offerText: true,
+                                    attributes: true,
+                                    promotionPrice: true,
+                                },
+                            },
+                            lastUpdated: true,
                         },
-                        _min: { price: true },
-                        _max: { price: true },
-                        _avg: { price: true },
+                        orderBy: { lastUpdated: 'desc' },
                     });
-                    const analytics = this.calculateAnalyticsFromAggregation(product, analyticsResult);
+                    const analytics = this.calculateAnalytics(productHistory);
                     return this.transformProductWithAnalytics({ ...product, category }, analytics);
                 }
                 catch (error) {
                     console.error(`Error processing product ${product.productId}:`, error);
                     return this.transformProductWithAnalytics({ ...product, category }, null);
                 }
-            }));
+            });
+            const productsWithAnalytics = await Promise.all(productPromises);
             return productsWithAnalytics;
         };
         if (category === 'all') {
@@ -359,7 +381,7 @@ let TescoService = class TescoService {
                     distinct: ['productId'],
                 });
                 totalProducts += distinctProductIds.length;
-                const categoryProducts = await fetchProductsWithAnalytics(modelInstance, where, 0, distinctProductIds.length, category);
+                const categoryProducts = await fetchProductsWithAnalytics(modelInstance, where, skip, take, category);
                 allResults.push(...categoryProducts);
             }
             const totalPages = Math.ceil(totalProducts / pageSize);
@@ -389,48 +411,6 @@ let TescoService = class TescoService {
                 availableCategories: Array.from(availableCategories),
             };
         }
-    }
-    calculateAnalyticsFromAggregation(currentProduct, aggregation) {
-        const currentPrice = currentProduct.promotions.length > 0 && currentProduct.promotions[0].promotionPrice !== null
-            ? currentProduct.promotions[0].promotionPrice
-            : currentProduct.price;
-        const previousPrice = aggregation._max.price;
-        const minPrice = aggregation._min.price;
-        const averagePrice = aggregation._avg.price;
-        const priceDifference = previousPrice - currentPrice;
-        const percentageChange = (priceDifference / previousPrice) * 100;
-        const isOnSale = currentProduct.promotions && currentProduct.promotions.length > 0;
-        let priceChangeStatus = 'unchanged';
-        if (priceDifference > 0) {
-            priceChangeStatus = 'decreased';
-        }
-        else if (priceDifference < 0) {
-            priceChangeStatus = 'increased';
-        }
-        let isBuyRecommended = 'neutral';
-        if (priceDifference > 0) {
-            isBuyRecommended = 'yes';
-        }
-        else if (priceDifference < 0) {
-            isBuyRecommended = 'no';
-        }
-        else if (isOnSale) {
-            isBuyRecommended = 'yes';
-        }
-        if (averagePrice !== null && currentPrice < averagePrice) {
-            isBuyRecommended = 'yes';
-        }
-        return {
-            priceDrop: priceDifference > 0 ? parseFloat(priceDifference.toFixed(2)) : 0,
-            priceIncrease: priceDifference < 0 ? parseFloat(Math.abs(priceDifference).toFixed(2)) : 0,
-            percentageChange: parseFloat(percentageChange.toFixed(2)),
-            isBuyRecommended: isBuyRecommended,
-            isOnSale: isOnSale,
-            previousPrice: parseFloat(previousPrice.toFixed(2)),
-            priceChangeStatus: priceChangeStatus,
-            averagePrice: parseFloat(averagePrice.toFixed(2)),
-            lowestPrice: parseFloat(minPrice.toFixed(2)),
-        };
     }
     calculateAnalytics(products) {
         if (products.length < 2) {

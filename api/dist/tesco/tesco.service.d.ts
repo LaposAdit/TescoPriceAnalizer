@@ -11,6 +11,5 @@ export declare class TescoService {
     private searchModelForTerm;
     searchProductsByName(searchTerm: string, page: number, pageSize: number, sale?: boolean, category?: string): Promise<any>;
     getProductsAnalytics(category: string, page: number, pageSize: number, sale?: boolean): Promise<any>;
-    private calculateAnalyticsFromAggregation;
     private calculateAnalytics;
 }
