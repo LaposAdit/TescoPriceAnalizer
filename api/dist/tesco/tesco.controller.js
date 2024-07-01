@@ -21,6 +21,10 @@ let TescoController = class TescoController {
     constructor(service) {
         this.service = service;
     }
+    async getProductsAnalyticsFromDb(category = 'all', page = 1, pageSize = 25, sale) {
+        const saleBoolean = sale === 'true' ? true : sale === 'false' ? false : undefined;
+        return this.service.getProductsAnalytics(category, page, pageSize, saleBoolean);
+    }
     async getProductsFromDb(category = 'all', page = 1, pageSize = 25, sale) {
         const saleBoolean = sale === 'true' ? true : sale === 'false' ? false : undefined;
         return this.service.getProducts(category, page, pageSize, saleBoolean);
@@ -35,6 +39,26 @@ let TescoController = class TescoController {
     }
 };
 exports.TescoController = TescoController;
+__decorate([
+    (0, common_1.Get)('analytics'),
+    (0, swagger_1.ApiQuery)({
+        name: 'category',
+        required: false,
+        enum: Object.values(product_category_enum_1.ProductCategory),
+        description: 'Product category'
+    }),
+    (0, swagger_1.ApiQuery)({ name: 'page', required: false, description: 'Page number', type: Number }),
+    (0, swagger_1.ApiQuery)({ name: 'pageSize', required: false, description: 'Number of items per page', type: Number }),
+    (0, swagger_1.ApiQuery)({ name: 'sale', required: false, description: 'Filter by sale', type: Boolean }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'The products with analytics have been successfully fetched from the database.', type: Object }),
+    __param(0, (0, common_1.Query)('category')),
+    __param(1, (0, common_1.Query)('page')),
+    __param(2, (0, common_1.Query)('pageSize')),
+    __param(3, (0, common_1.Query)('sale')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object, String]),
+    __metadata("design:returntype", Promise)
+], TescoController.prototype, "getProductsAnalyticsFromDb", null);
 __decorate([
     (0, common_1.Get)(),
     (0, swagger_1.ApiQuery)({

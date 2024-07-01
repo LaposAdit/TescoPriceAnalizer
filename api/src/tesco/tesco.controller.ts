@@ -10,6 +10,29 @@ export class TescoController {
     constructor(private readonly service: TescoService) { }
 
 
+    @Get('analytics')
+    @ApiQuery({
+        name: 'category',
+        required: false,
+        enum: Object.values(ProductCategory),
+        description: 'Product category'
+    })
+    @ApiQuery({ name: 'page', required: false, description: 'Page number', type: Number })
+    @ApiQuery({ name: 'pageSize', required: false, description: 'Number of items per page', type: Number })
+    @ApiQuery({ name: 'sale', required: false, description: 'Filter by sale', type: Boolean })
+    @ApiResponse({ status: 200, description: 'The products with analytics have been successfully fetched from the database.', type: Object })
+    async getProductsAnalyticsFromDb(
+        @Query('category') category: string = 'all',
+        @Query('page') page = 1,
+        @Query('pageSize') pageSize = 25,
+        @Query('sale') sale?: string
+    ): Promise<GenericResponse<any>> {
+        const saleBoolean = sale === 'true' ? true : sale === 'false' ? false : undefined;
+
+        return this.service.getProductsAnalytics(category, page, pageSize, saleBoolean);
+    }
+
+
     @Get()
     @ApiQuery({
         name: 'category',

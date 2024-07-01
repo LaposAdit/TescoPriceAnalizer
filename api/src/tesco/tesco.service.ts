@@ -330,4 +330,233 @@ export class TescoService {
             availableCategories: Array.from(availableCategories),
         };
     }
+
+    async getProductsAnalytics(
+        category: string,
+        page: number,
+        pageSize: number,
+        sale?: boolean
+    ): Promise<any> {
+        const skip = (page - 1) * pageSize;
+        const take = Number(pageSize);
+        const allCategories = [
+            'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny',
+            'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky',
+            'grilovanie', 'alkohol',
+        ];
+        const availableCategories: Set<string> = new Set(allCategories);
+
+        const fetchProductsWithAnalytics = async (model: any, where: any, skip: number, take: number, category: string) => {
+            const latestProducts = await model.findMany({
+                where,
+                skip,
+                take,
+                include: { promotions: true },
+                orderBy: { lastUpdated: 'desc' },
+                distinct: ['productId'],
+            });
+
+            const productsWithAnalytics = await Promise.all(
+                latestProducts.map(async (product: any) => {
+                    try {
+                        // Fetch all historical data for the product
+                        const productHistory = await model.findMany({
+                            where: { productId: product.productId },
+                            include: { promotions: true },
+                            orderBy: { lastUpdated: 'desc' },
+                        });
+
+                        const analytics = this.calculateAnalytics(productHistory);
+                        return this.transformProductWithAnalytics({ ...product, category }, analytics);
+                    } catch (error) {
+                        console.error(`Error processing product ${product.productId}:`, error);
+                        return this.transformProductWithAnalytics({ ...product, category }, null);
+                    }
+                })
+            );
+
+            return productsWithAnalytics;
+        };
+
+        if (category === 'all') {
+            const models: Array<{ model: keyof PrismaService, category: string }> = [
+                { model: 'trvanlivePotraviny', category: 'trvanlivePotraviny' },
+                { model: 'specialnaAZdravaVyziva', category: 'specialnaAZdravaVyziva' },
+                { model: 'pecivo', category: 'pecivo' },
+                { model: 'ovocieAZeleniny', category: 'ovocieAZeleniny' },
+                { model: 'napoje', category: 'napoje' },
+                { model: 'mrazenePotraviny', category: 'mrazenePotraviny' },
+                { model: 'mliecneVyrobkyAVajcia', category: 'mliecneVyrobkyAVajcia' },
+                { model: 'masoRybyALahodky', category: 'masoRybyALahodky' },
+                { model: 'grilovanie', category: 'grilovanie' },
+                { model: 'alkohol', category: 'alkohol' },
+            ];
+
+            let allResults: any[] = [];
+            let totalProducts = 0;
+
+            for (const { model, category } of models) {
+                const where = this.createWhereClause(sale);
+                const modelInstance = this.prisma[model] as any;
+
+                const distinctProductIds = await modelInstance.findMany({
+                    where,
+                    select: { productId: true },
+                    distinct: ['productId']
+                });
+                totalProducts += distinctProductIds.length;
+
+                const categoryProducts = await fetchProductsWithAnalytics(modelInstance, where, 0, distinctProductIds.length, category);
+                allResults.push(...categoryProducts);
+            }
+
+            const totalPages = Math.ceil(totalProducts / pageSize);
+            const paginatedProducts = allResults.slice(skip, skip + take);
+
+            return {
+                totalPages,
+                totalProducts,
+                products: paginatedProducts,
+                availableCategories: Array.from(availableCategories),
+            };
+        } else {
+            const model = this.getPrismaModel(category);
+            const where = this.createWhereClause(sale);
+
+            const totalProducts = await model.count({
+                where,
+                distinct: ['productId']
+            });
+            const totalPages = Math.ceil(totalProducts / pageSize);
+
+            const products = await fetchProductsWithAnalytics(model, where, skip, take, category);
+
+            return {
+                totalPages,
+                totalProducts,
+                products,
+                availableCategories: Array.from(availableCategories),
+            };
+        }
+    }
+
+    private calculateAnalytics(products: any[]): any {
+        if (products.length < 2) {
+            return {
+                priceDrop: 0,
+                priceIncrease: 0,
+                percentageChange: 0,
+                isBuyRecommended: 'neutral',
+                isOnSale: false,
+                previousPrice: null,
+                priceChangeStatus: 'unknown',
+                averagePrice: null
+            };
+        }
+
+        const getCurrentPrice = (product: any): number | null => {
+            if (product.promotions && product.promotions.length > 0 && product.promotions[0].promotionPrice != null) {
+                return product.promotions[0].promotionPrice;
+            }
+            return product.price != null ? product.price : null;
+        };
+
+        const currentProduct = products[0];
+        const previousProduct = products[1];
+
+        const currentPrice = getCurrentPrice(currentProduct);
+        const previousPrice = getCurrentPrice(previousProduct);
+
+        // Calculate average price
+        const validPrices = products
+            .map(getCurrentPrice)
+            .filter((price): price is number => price !== null);
+        const averagePrice = validPrices.length > 0
+            ? parseFloat((validPrices.reduce((sum, price) => sum + price, 0) / validPrices.length).toFixed(2))
+            : null;
+
+        if (currentPrice === null || previousPrice === null) {
+            return {
+                priceDrop: 0,
+                priceIncrease: 0,
+                percentageChange: 0,
+                isBuyRecommended: 'neutral',
+                isOnSale: currentProduct.promotions && currentProduct.promotions.length > 0,
+                previousPrice: previousPrice,
+                priceChangeStatus: 'unknown',
+                averagePrice: averagePrice
+            };
+        }
+
+        const priceDifference = previousPrice - currentPrice;
+        const percentageChange = (priceDifference / previousPrice) * 100;
+
+        const isOnSale = currentProduct.promotions && currentProduct.promotions.length > 0;
+
+        let priceChangeStatus: 'decreased' | 'increased' | 'unchanged' = 'unchanged';
+        if (priceDifference > 0) {
+            priceChangeStatus = 'decreased';
+        } else if (priceDifference < 0) {
+            priceChangeStatus = 'increased';
+        }
+
+        let isBuyRecommended: 'yes' | 'no' | 'neutral' = 'neutral';
+        if (priceDifference > 0) {
+            isBuyRecommended = 'yes';
+        } else if (priceDifference < 0) {
+            isBuyRecommended = 'no';
+        } else if (isOnSale) {
+            isBuyRecommended = 'yes';
+        }
+
+        // Compare current price to average price for buy recommendation
+        if (averagePrice !== null && currentPrice < averagePrice) {
+            isBuyRecommended = 'yes';
+        }
+
+        return {
+            priceDrop: priceDifference > 0 ? parseFloat(priceDifference.toFixed(2)) : 0,
+            priceIncrease: priceDifference < 0 ? parseFloat(Math.abs(priceDifference).toFixed(2)) : 0,
+            percentageChange: parseFloat(percentageChange.toFixed(2)),
+            isBuyRecommended: isBuyRecommended,
+            isOnSale: isOnSale,
+            previousPrice: parseFloat(previousPrice.toFixed(2)),
+            priceChangeStatus: priceChangeStatus,
+            averagePrice: averagePrice
+        };
+    }
+
+    private transformProductWithAnalytics(product: any, analytics: any): any {
+        return {
+            dbId: product.id,
+            productId: product.productId,
+            title: product.title,
+            price: product.price,
+            unitPrice: product.unitPrice,
+            imageUrl: product.imageUrl,
+            unitOfMeasure: product.unitOfMeasure,
+            isForSale: product.isForSale,
+            aisleName: product.aisleName,
+            superDepartmentName: product.superDepartmentName,
+            category: product.category,
+            promotions: product.promotions.map((promo: any) => ({
+                promotionId: promo.promotionId,
+                promotionType: promo.promotionType,
+                startDate: promo.startDate.toISOString(),
+                endDate: promo.endDate.toISOString(),
+                offerText: promo.offerText,
+                attributes: promo.attributes,
+                promotionPrice: promo.promotionPrice,
+            })),
+            hasPromotions: product.promotions.length > 0,
+            lastUpdated: product.lastUpdated,
+            analytics: analytics
+        };
+    }
 }
+
+
+
+
+
+
