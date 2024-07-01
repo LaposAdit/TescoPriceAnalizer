@@ -296,20 +296,21 @@ let TescoService = class TescoService {
             'grilovanie', 'alkohol',
         ];
         const availableCategories = new Set(allCategories);
-        const fetchProductsWithAnalytics = async (model, where, category) => {
+        const fetchProductsWithAnalytics = async (model, where, skip, take, category) => {
             const latestProducts = await model.findMany({
                 where,
-                include: {
-                    promotions: true,
-                },
+                include: { promotions: true },
                 orderBy: { lastUpdated: 'desc' },
                 distinct: ['productId'],
+                skip,
+                take,
             });
             const productsWithAnalytics = await Promise.all(latestProducts.map(async (product) => {
                 const productHistory = await model.findMany({
                     where: { productId: product.productId },
                     include: { promotions: true },
                     orderBy: { lastUpdated: 'desc' },
+                    take: 2,
                 });
                 const analytics = this.calculateAnalytics(productHistory);
                 return this.transformProductWithAnalytics({ ...product, category }, analytics);
@@ -317,6 +318,7 @@ let TescoService = class TescoService {
             return productsWithAnalytics;
         };
         let allResults = [];
+        let totalProducts = 0;
         if (category === 'all') {
             const models = [
                 { model: 'trvanlivePotraviny', category: 'trvanlivePotraviny' },
@@ -333,14 +335,31 @@ let TescoService = class TescoService {
             for (const { model, category } of models) {
                 const where = this.createWhereClause(sale);
                 const modelInstance = this.prisma[model];
-                const categoryProducts = await fetchProductsWithAnalytics(modelInstance, where, category);
+                const distinctProducts = await modelInstance.groupBy({
+                    by: ['productId'],
+                    where,
+                    _count: {
+                        productId: true
+                    }
+                });
+                const categoryTotal = distinctProducts.length;
+                totalProducts += categoryTotal;
+                const categoryProducts = await fetchProductsWithAnalytics(modelInstance, where, skip, take, category);
                 allResults.push(...categoryProducts);
             }
         }
         else {
             const model = this.getPrismaModel(category);
             const where = this.createWhereClause(sale);
-            allResults = await fetchProductsWithAnalytics(model, where, category);
+            const distinctProducts = await model.groupBy({
+                by: ['productId'],
+                where,
+                _count: {
+                    productId: true
+                }
+            });
+            totalProducts = distinctProducts.length;
+            allResults = await fetchProductsWithAnalytics(model, where, skip, take, category);
         }
         let filteredProducts = this.applyAnalyticsFilters(allResults, {
             minPriceDrop,
@@ -353,13 +372,11 @@ let TescoService = class TescoService {
         if (sortBy && sortOrder) {
             filteredProducts = this.sortProductsByAnalytics(filteredProducts, sortBy, sortOrder);
         }
-        const totalProducts = filteredProducts.length;
         const totalPages = Math.ceil(totalProducts / pageSize);
-        const paginatedProducts = filteredProducts.slice(skip, skip + take);
         return {
             totalPages,
             totalProducts,
-            products: paginatedProducts,
+            products: filteredProducts,
             availableCategories: Array.from(availableCategories),
         };
     }
@@ -439,6 +456,8 @@ let TescoService = class TescoService {
         };
     }
     async searchProductsByNameWithAnalytics(searchTerm, page, pageSize, sale, category, sortBy, sortOrder, minPriceDrop, maxPriceIncrease, minPercentageChange, isBuyRecommended, isOnSale, priceChangeStatus) {
+        const skip = (page - 1) * pageSize;
+        const take = Number(pageSize);
         const allCategories = [
             'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny',
             'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky',
@@ -452,7 +471,7 @@ let TescoService = class TescoService {
         else {
             models = allCategories.map(cat => ({ model: this.getPrismaModel(cat), category: cat }));
         }
-        const searchModelForTermWithAnalytics = async (model, searchTerm, sale, category) => {
+        const searchModelForTermWithAnalytics = async (model, searchTerm, skip, take, sale, category) => {
             const where = {
                 title: {
                     contains: searchTerm,
@@ -465,30 +484,43 @@ let TescoService = class TescoService {
             const results = await model.findMany({
                 where,
                 include: { promotions: true },
-                orderBy: { lastUpdated: 'desc' }
+                orderBy: { lastUpdated: 'desc' },
+                distinct: ['productId'],
+                skip,
+                take,
             });
             const productsWithAnalytics = await Promise.all(results.map(async (product) => {
                 const productHistory = await model.findMany({
                     where: { productId: product.productId },
                     include: { promotions: true },
                     orderBy: { lastUpdated: 'desc' },
+                    take: 2,
                 });
                 const analytics = this.calculateAnalytics(productHistory);
                 return this.transformProductWithAnalytics({ ...product, category }, analytics);
             }));
             return productsWithAnalytics;
         };
-        const searchPromises = models.map(({ model, category }) => searchModelForTermWithAnalytics(model, searchTerm, sale, category));
-        const searchResults = await Promise.all(searchPromises);
-        const productsFromDb = searchResults.flat();
-        const latestProductsMap = new Map();
-        productsFromDb.forEach(product => {
-            if (!latestProductsMap.has(product.productId) || latestProductsMap.get(product.productId).lastUpdated < product.lastUpdated) {
-                latestProductsMap.set(product.productId, product);
-            }
-        });
-        let filteredProducts = Array.from(latestProductsMap.values());
-        filteredProducts = this.applyAnalyticsFilters(filteredProducts, {
+        let allResults = [];
+        let totalProducts = 0;
+        for (const { model, category } of models) {
+            const modelInstance = this.prisma[model];
+            const where = {
+                title: {
+                    contains: searchTerm,
+                    mode: 'insensitive',
+                },
+                ...(sale !== undefined ? { hasPromotions: sale } : {}),
+            };
+            const categoryTotal = await modelInstance.count({
+                where,
+                distinct: ['productId']
+            });
+            totalProducts += categoryTotal;
+            const categoryProducts = await searchModelForTermWithAnalytics(modelInstance, searchTerm, skip, take, sale, category);
+            allResults.push(...categoryProducts);
+        }
+        let filteredProducts = this.applyAnalyticsFilters(allResults, {
             minPriceDrop,
             maxPriceIncrease,
             minPercentageChange,
@@ -499,42 +531,13 @@ let TescoService = class TescoService {
         if (sortBy && sortOrder) {
             filteredProducts = this.sortProductsByAnalytics(filteredProducts, sortBy, sortOrder);
         }
-        const totalProducts = filteredProducts.length;
         const totalPages = Math.ceil(totalProducts / pageSize);
-        const skip = (page - 1) * pageSize;
-        const paginatedProducts = filteredProducts.slice(skip, skip + pageSize);
         return {
             totalPages,
             totalProducts,
-            products: paginatedProducts,
+            products: filteredProducts,
             availableCategories: Array.from(availableCategories),
         };
-    }
-    async searchModelForTermWithAnalytics(model, searchTerm, sale, category) {
-        const where = {
-            title: {
-                contains: searchTerm,
-                mode: 'insensitive',
-            },
-        };
-        if (sale !== undefined) {
-            where['hasPromotions'] = sale;
-        }
-        const results = await model.findMany({
-            where,
-            include: { promotions: true },
-            orderBy: { lastUpdated: 'desc' }
-        });
-        const productsWithAnalytics = await Promise.all(results.map(async (product) => {
-            const productHistory = await model.findMany({
-                where: { productId: product.productId },
-                include: { promotions: true },
-                orderBy: { lastUpdated: 'desc' },
-            });
-            const analytics = this.calculateAnalytics(productHistory);
-            return this.transformProductWithAnalytics({ ...product, category }, analytics);
-        }));
-        return productsWithAnalytics;
     }
     applyAnalyticsFilters(products, filters) {
         return products.filter(product => {

@@ -88,13 +88,22 @@ export default function ProductPage() {
     const [tableSettingsVisible, setTableSettingsVisible] = useState<boolean>(false);
     const [selectedColumns, setSelectedColumns] = useState<string[]>(columns.map(col => col.key));
 
+    // New state variables for additional filters and sorting options
+    const [sortBy, setSortBy] = useState<string>('');
+    const [sortOrder, setSortOrder] = useState<string>('asc');
+    const [minPriceDrop, setMinPriceDrop] = useState<number | undefined>(undefined);
+    const [maxPriceIncrease, setMaxPriceIncrease] = useState<number | undefined>(undefined);
+    const [minPercentageChange, setMinPercentageChange] = useState<number | undefined>(undefined);
+    const [isBuyRecommended, setIsBuyRecommended] = useState<string>('');
+    const [priceChangeStatus, setPriceChangeStatus] = useState<string>('');
+
     useEffect(() => {
         const fetchProducts = async () => {
             setLoading(true);
             setError(null);
 
             try {
-                const endpoint = searchTerm ? 'http://localhost:3000/products/search/analytics' : 'http://gkowk0c.85.216.151.114.sslip.io/products/analytics';
+                const endpoint = searchTerm ? 'http://localhost:3000/products/search/analytics' : 'http://localhost:3000/products/analytics';
 
                 const response = await axios.get<ProductResponse>(endpoint, {
                     params: {
@@ -103,6 +112,13 @@ export default function ProductPage() {
                         sale,
                         pageSize,
                         page,
+                        sortBy: sortBy || undefined,
+                        sortOrder: sortOrder || undefined,
+                        minPriceDrop: minPriceDrop || undefined,
+                        maxPriceIncrease: maxPriceIncrease || undefined,
+                        minPercentageChange: minPercentageChange || undefined,
+                        isBuyRecommended: isBuyRecommended || undefined,
+                        priceChangeStatus: priceChangeStatus || undefined,
                     },
                     headers: {
                         accept: 'application/json',
@@ -131,7 +147,7 @@ export default function ProductPage() {
         }, 500);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [category, sale, pageSize, page, searchTerm]);
+    }, [category, sale, pageSize, page, searchTerm, sortBy, sortOrder, minPriceDrop, maxPriceIncrease, minPercentageChange, isBuyRecommended, priceChangeStatus]);
 
     const handlePageChange = (newPage: number) => {
         setPage(newPage);
@@ -260,17 +276,107 @@ export default function ProductPage() {
                         </div>
                     </div>
                     {tableSettingsVisible && (
-                        <div className="flex flex-wrap space-x-3 p-4 border-t dark:border-gray-700">
-                            {columns.map(column => (
-                                <label key={column.key} className="flex items-center space-x-2">
+                        <div className="p-4 border-t dark:border-gray-700">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {columns.map(column => (
+                                    <div key={column.key} className="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedColumns.includes(column.key)}
+                                            onChange={() => handleColumnToggle(column.key)}
+                                            className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
+                                        />
+                                        <label className="ml-2 text-gray-700 dark:text-gray-400">{column.label}</label>
+                                    </div>
+                                ))}
+
+                                {/* Additional filter and sorting options */}
+                                <div className="flex flex-col space-y-2">
+                                    <label className="text-gray-700 dark:text-gray-400">Sort By:</label>
+                                    <select
+                                        value={sortBy}
+                                        onChange={(e) => setSortBy(e.target.value)}
+                                        className="border p-2 rounded-md bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    >
+                                        <option value="">None</option>
+                                        <option value="priceDrop">Price Drop</option>
+                                        <option value="priceIncrease">Price Increase</option>
+                                        <option value="percentageChange">Percentage Change</option>
+                                        <option value="previousPrice">Previous Price</option>
+                                        <option value="averagePrice">Average Price</option>
+                                    </select>
+                                </div>
+
+                                <div className="flex flex-col space-y-2">
+                                    <label className="text-gray-700 dark:text-gray-400">Sort Order:</label>
+                                    <select
+                                        value={sortOrder}
+                                        onChange={(e) => setSortOrder(e.target.value)}
+                                        className="border p-2 rounded-md bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    >
+                                        <option value="asc">Ascending</option>
+                                        <option value="desc">Descending</option>
+                                    </select>
+                                </div>
+
+                                <div className="flex flex-col space-y-2">
+                                    <label className="text-gray-700 dark:text-gray-400">Min Price Drop:</label>
                                     <input
-                                        type="checkbox"
-                                        checked={selectedColumns.includes(column.key)}
-                                        onChange={() => handleColumnToggle(column.key)}
+                                        type="number"
+                                        value={minPriceDrop ?? ''}
+                                        onChange={(e) => setMinPriceDrop(e.target.value ? Number(e.target.value) : undefined)}
+                                        className="border p-2 rounded-md bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                     />
-                                    <span className="text-gray-700 dark:text-gray-400">{column.label}</span>
-                                </label>
-                            ))}
+                                </div>
+
+                                <div className="flex flex-col space-y-2">
+                                    <label className="text-gray-700 dark:text-gray-400">Max Price Increase:</label>
+                                    <input
+                                        type="number"
+                                        value={maxPriceIncrease ?? ''}
+                                        onChange={(e) => setMaxPriceIncrease(e.target.value ? Number(e.target.value) : undefined)}
+                                        className="border p-2 rounded-md bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    />
+                                </div>
+
+                                <div className="flex flex-col space-y-2">
+                                    <label className="text-gray-700 dark:text-gray-400">Min Percentage Change:</label>
+                                    <input
+                                        type="number"
+                                        value={minPercentageChange ?? ''}
+                                        onChange={(e) => setMinPercentageChange(e.target.value ? Number(e.target.value) : undefined)}
+                                        className="border p-2 rounded-md bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    />
+                                </div>
+
+                                <div className="flex flex-col space-y-2">
+                                    <label className="text-gray-700 dark:text-gray-400">Buy Recommended:</label>
+                                    <select
+                                        value={isBuyRecommended}
+                                        onChange={(e) => setIsBuyRecommended(e.target.value)}
+                                        className="border p-2 rounded-md bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    >
+                                        <option value="">Any</option>
+                                        <option value="yes">Yes</option>
+                                        <option value="no">No</option>
+                                        <option value="neutral">Neutral</option>
+                                    </select>
+                                </div>
+
+                                <div className="flex flex-col space-y-2">
+                                    <label className="text-gray-700 dark:text-gray-400">Price Change Status:</label>
+                                    <select
+                                        value={priceChangeStatus}
+                                        onChange={(e) => setPriceChangeStatus(e.target.value)}
+                                        className="border p-2 rounded-md bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    >
+                                        <option value="">Any</option>
+                                        <option value="decreased">Decreased</option>
+                                        <option value="increased">Increased</option>
+                                        <option value="unchanged">Unchanged</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     )}
                     <div className="flex flex-col md:flex-row items-stretch md:items-center md:space-x-3 space-y-3 md:space-y-0 justify-between mx-4 py-4 border-t dark:border-gray-700">

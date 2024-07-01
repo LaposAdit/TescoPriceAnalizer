@@ -11,40 +11,25 @@ export class TescoController {
 
 
     @Get('analytics')
-    @ApiQuery({ name: 'category', required: false, enum: Object.values(ProductCategory), description: 'Product category' })
+    @ApiQuery({
+        name: 'category',
+        required: false,
+        enum: Object.values(ProductCategory),
+        description: 'Product category'
+    })
     @ApiQuery({ name: 'page', required: false, description: 'Page number', type: Number })
     @ApiQuery({ name: 'pageSize', required: false, description: 'Number of items per page', type: Number })
     @ApiQuery({ name: 'sale', required: false, description: 'Filter by sale', type: Boolean })
-    @ApiQuery({ name: 'sortBy', required: false, enum: ['priceDrop', 'priceIncrease', 'percentageChange', 'previousPrice', 'averagePrice'], description: 'Sort by analytics field' })
-    @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'], description: 'Sort order' })
-    @ApiQuery({ name: 'minPriceDrop', required: false, type: Number, description: 'Minimum price drop' })
-    @ApiQuery({ name: 'maxPriceIncrease', required: false, type: Number, description: 'Maximum price increase' })
-    @ApiQuery({ name: 'minPercentageChange', required: false, type: Number, description: 'Minimum percentage change' })
-    @ApiQuery({ name: 'isBuyRecommended', required: false, enum: ['yes', 'no', 'neutral'], description: 'Buy recommendation' })
-    @ApiQuery({ name: 'isOnSale', required: false, type: Boolean, description: 'Is on sale' })
-    @ApiQuery({ name: 'priceChangeStatus', required: false, enum: ['decreased', 'increased', 'unchanged'], description: 'Price change status' })
     @ApiResponse({ status: 200, description: 'The products with analytics have been successfully fetched from the database.', type: Object })
     async getProductsAnalyticsFromDb(
         @Query('category') category: string = 'all',
         @Query('page') page = 1,
         @Query('pageSize') pageSize = 25,
-        @Query('sale') sale?: string,
-        @Query('sortBy') sortBy?: string,
-        @Query('sortOrder') sortOrder?: 'asc' | 'desc',
-        @Query('minPriceDrop') minPriceDrop?: number,
-        @Query('maxPriceIncrease') maxPriceIncrease?: number,
-        @Query('minPercentageChange') minPercentageChange?: number,
-        @Query('isBuyRecommended') isBuyRecommended?: 'yes' | 'no' | 'neutral',
-        @Query('isOnSale') isOnSale?: boolean,
-        @Query('priceChangeStatus') priceChangeStatus?: 'decreased' | 'increased' | 'unchanged'
+        @Query('sale') sale?: string
     ): Promise<GenericResponse<any>> {
         const saleBoolean = sale === 'true' ? true : sale === 'false' ? false : undefined;
 
-        return this.service.getProductsAnalytics(
-            category, page, pageSize, saleBoolean, sortBy, sortOrder,
-            minPriceDrop, maxPriceIncrease, minPercentageChange,
-            isBuyRecommended, isOnSale, priceChangeStatus
-        );
+        return this.service.getProductsAnalytics(category, page, pageSize, saleBoolean);
     }
 
 
@@ -77,14 +62,6 @@ export class TescoController {
     @ApiQuery({ name: 'pageSize', required: false, description: 'Number of items per page', type: Number, example: 25 })
     @ApiQuery({ name: 'sale', required: false, description: 'Filter by sale', type: Boolean })
     @ApiQuery({ name: 'category', required: false, enum: ProductCategory, description: 'Product category' })
-    @ApiQuery({ name: 'sortBy', required: false, enum: ['priceDrop', 'priceIncrease', 'percentageChange', 'previousPrice', 'averagePrice'], description: 'Sort by analytics field' })
-    @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'], description: 'Sort order' })
-    @ApiQuery({ name: 'minPriceDrop', required: false, type: Number, description: 'Minimum price drop' })
-    @ApiQuery({ name: 'maxPriceIncrease', required: false, type: Number, description: 'Maximum price increase' })
-    @ApiQuery({ name: 'minPercentageChange', required: false, type: Number, description: 'Minimum percentage change' })
-    @ApiQuery({ name: 'isBuyRecommended', required: false, enum: ['yes', 'no', 'neutral'], description: 'Buy recommendation' })
-    @ApiQuery({ name: 'isOnSale', required: false, type: Boolean, description: 'Is on sale' })
-    @ApiQuery({ name: 'priceChangeStatus', required: false, enum: ['decreased', 'increased', 'unchanged'], description: 'Price change status' })
     @ApiResponse({ status: 200, description: 'List of products matching the search term with analytics' })
     @Get('search/analytics')
     async searchProductsByNameWithAnalytics(
@@ -93,22 +70,10 @@ export class TescoController {
         @Query('pageSize') pageSize = 25,
         @Query('sale') sale?: string,
         @Query('category') category?: ProductCategory,
-        @Query('sortBy') sortBy?: string,
-        @Query('sortOrder') sortOrder?: 'asc' | 'desc',
-        @Query('minPriceDrop') minPriceDrop?: number,
-        @Query('maxPriceIncrease') maxPriceIncrease?: number,
-        @Query('minPercentageChange') minPercentageChange?: number,
-        @Query('isBuyRecommended') isBuyRecommended?: 'yes' | 'no' | 'neutral',
-        @Query('isOnSale') isOnSale?: boolean,
-        @Query('priceChangeStatus') priceChangeStatus?: 'decreased' | 'increased' | 'unchanged'
     ) {
         console.log("Analytics search request received with term:", searchTerm);
         const saleBoolean = sale === 'true' ? true : sale === 'false' ? false : undefined;
-        return this.service.searchProductsByNameWithAnalytics(
-            searchTerm, page, pageSize, saleBoolean, category, sortBy, sortOrder,
-            minPriceDrop, maxPriceIncrease, minPercentageChange,
-            isBuyRecommended, isOnSale, priceChangeStatus
-        );
+        return this.service.searchProductsByNameWithAnalytics(searchTerm, page, pageSize, saleBoolean, category);
     }
 
     @ApiOperation({ summary: 'Search products by name' })
