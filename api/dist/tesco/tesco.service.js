@@ -107,11 +107,11 @@ let TescoService = class TescoService {
         const fetchLatestProducts = async (model, where, skip, take, category) => {
             const latestProducts = await model.findMany({
                 where,
+                orderBy: [{ productId: 'asc' }, { lastUpdated: 'desc' }],
+                distinct: ['productId'],
                 skip,
                 take,
                 include: { promotions: true },
-                orderBy: { lastUpdated: 'desc' },
-                distinct: ['productId'],
             });
             return latestProducts.map(product => this.transformProduct({ ...product, category }));
         };

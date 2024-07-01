@@ -90,6 +90,11 @@ export class TescoService {
         }
         return where;
     }
+
+
+
+
+
     async getProducts(
         category: string,
         page: number,
@@ -108,11 +113,11 @@ export class TescoService {
         const fetchLatestProducts = async (model: any, where: any, skip: number, take: number, category: string) => {
             const latestProducts = await model.findMany({
                 where,
+                orderBy: [{ productId: 'asc' }, { lastUpdated: 'desc' }],
+                distinct: ['productId'],
                 skip,
                 take,
                 include: { promotions: true },
-                orderBy: { lastUpdated: 'desc' },
-                distinct: ['productId'],
             });
 
             return latestProducts.map(product => this.transformProduct({ ...product, category }));
@@ -169,6 +174,8 @@ export class TescoService {
             };
         }
     }
+
+
 
     async getProductById(category: string, productId: string): Promise<any[]> {
         const model = this.getPrismaModel(category);

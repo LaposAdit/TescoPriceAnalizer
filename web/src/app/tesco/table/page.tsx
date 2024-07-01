@@ -97,7 +97,7 @@ export default function ProductPage() {
             setError(null);
 
             try {
-                const endpoint = searchTerm ? 'http://localhost:3000/products/search' : 'http://localhost:3000/products/analytics';
+                const endpoint = searchTerm ? 'http://localhost:3000/products/search' : 'http://gkowk0c.85.216.151.114.sslip.io/products/analytics';
 
                 const response = await axios.get<ProductResponse>(endpoint, {
                     params: {
