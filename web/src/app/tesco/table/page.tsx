@@ -2,6 +2,18 @@
 import React, { useState, useEffect } from "react";
 import axios from 'axios';
 
+
+interface Analytics {
+    priceDrop: number;
+    priceIncrease: number;
+    percentageChange: number;
+    isBuyRecommended: 'yes' | 'no' | 'neutral';
+    isOnSale: boolean;
+    previousPrice: number | null;
+    priceChangeStatus: 'decreased' | 'increased' | 'unchanged' | 'unknown';
+    averagePrice: number | null;
+}
+
 interface Promotion {
     promotionId: string;
     promotionType: string;
@@ -13,6 +25,7 @@ interface Promotion {
 }
 
 interface ProductDetail {
+    dbId: number;
     productId: string;
     title: string;
     price: number;
@@ -25,6 +38,7 @@ interface ProductDetail {
     promotions: Promotion[];
     hasPromotions: boolean;
     lastUpdated: string;
+    analytics: Analytics;
 }
 
 interface ProductResponse {
@@ -83,7 +97,7 @@ export default function ProductPage() {
             setError(null);
 
             try {
-                const endpoint = searchTerm ? 'http://localhost:3000/products/search' : 'http://localhost:3000/products';
+                const endpoint = searchTerm ? 'http://localhost:3000/products/search' : 'http://localhost:3000/products/analytics';
 
                 const response = await axios.get<ProductResponse>(endpoint, {
                     params: {
@@ -121,7 +135,6 @@ export default function ProductPage() {
 
         return () => clearTimeout(delayDebounceFn);
     }, [category, sale, pageSize, page, searchTerm]);
-
 
 
     const handlePageChange = (newPage: number) => {
@@ -356,7 +369,8 @@ export default function ProductPage() {
                                     {selectedColumns.includes('promotionPrice') && <th scope="col" className="p-4">Promotion Price</th>}
                                     {selectedColumns.includes('lastUpdated') && <th scope="col" className="p-4">Last Updated</th>}
                                     {selectedColumns.includes('priceDrop') && <th scope="col" className="p-4">Price Drop</th>}
-                                    {selectedColumns.includes('percentageDrop') && <th scope="col" className="p-4">Percentage Drop</th>}
+                                    {selectedColumns.includes('percentageDrop') && <th scope="col" className="p-4">Percentage Change</th>}
+                                    {selectedColumns.includes('averagePrice') && <th scope="col" className="p-4">Average Price</th>}
                                 </tr>
                             </thead>
                             <tbody>
@@ -384,8 +398,9 @@ export default function ProductPage() {
                                                 {selectedColumns.includes('unitPrice') && <td className="p-4">€{product.unitPrice?.toFixed(2) ?? 'N/A'} per {product.unitOfMeasure}</td>}
                                                 {selectedColumns.includes('promotionPrice') && <td className="p-4">{product.promotions.length > 0 && product.promotions[0].promotionPrice !== null ? `€${product.promotions[0].promotionPrice?.toFixed(2) ?? 'N/A'}` : 'N/A'}</td>}
                                                 {selectedColumns.includes('lastUpdated') && <td className="p-4">{product.lastUpdated ? new Date(product.lastUpdated).toLocaleDateString() : 'N/A'}</td>}
-                                                {selectedColumns.includes('priceDrop') && <td className={`p-4 ${priceDropClass}`}>€{priceDrop.toFixed(2)}</td>}
-                                                {selectedColumns.includes('percentageDrop') && <td className={`p-4 ${percentageDropClass}`}>{percentageDrop.toFixed(2)}%</td>}
+                                                {selectedColumns.includes('priceDrop') && <td className={`p-4 ${product.analytics.priceDrop > 0 ? 'text-green-500' : 'text-gray-500'}`}>€{product.analytics.priceDrop.toFixed(2)}</td>}
+                                                {selectedColumns.includes('percentageDrop') && <td className={`p-4 ${product.analytics.percentageChange > 0 ? 'text-green-500' : product.analytics.percentageChange < 0 ? 'text-red-500' : 'text-gray-500'}`}>{product.analytics.percentageChange.toFixed(2)}%</td>}
+                                                {selectedColumns.includes('averagePrice') && <td className="p-4">€{product.analytics.averagePrice?.toFixed(2) ?? 'N/A'}</td>}
                                             </tr>
                                         );
                                     })
