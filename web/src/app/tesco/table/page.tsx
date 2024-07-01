@@ -1,7 +1,6 @@
-"use client"
+"use client";
 import React, { useState, useEffect } from "react";
 import axios from 'axios';
-
 
 interface Analytics {
     priceDrop: number;
@@ -48,9 +47,6 @@ interface ProductResponse {
     availableCategories: string[];
 }
 
-
-
-
 const categoryMap: { [key: string]: string } = {
     trvanlivePotraviny: 'Trvanlivé Potraviny',
     specialnaAZdravaVyziva: 'Špeciálna a Zdravá Výživa',
@@ -72,8 +68,9 @@ const columns = [
     { key: 'unitPrice', label: 'Unit Price' },
     { key: 'promotionPrice', label: 'Promotion Price' },
     { key: 'lastUpdated', label: 'Last Updated' },
-    { key: 'priceDrop', label: 'Price Drop' },
-    { key: 'percentageDrop', label: 'Percentage Drop' }
+    { key: 'priceChange', label: 'Price Change' },
+    { key: 'percentageChange', label: 'Percentage Change' },
+    { key: 'averagePrice', label: 'Average Price' }
 ];
 
 export default function ProductPage() {
@@ -97,7 +94,7 @@ export default function ProductPage() {
             setError(null);
 
             try {
-                const endpoint = searchTerm ? 'http://localhost:3000/products/search' : 'http://gkowk0c.85.216.151.114.sslip.io/products/analytics';
+                const endpoint = searchTerm ? 'http://localhost:3000/products/search/analytics' : 'http://gkowk0c.85.216.151.114.sslip.io/products/analytics';
 
                 const response = await axios.get<ProductResponse>(endpoint, {
                     params: {
@@ -135,7 +132,6 @@ export default function ProductPage() {
 
         return () => clearTimeout(delayDebounceFn);
     }, [category, sale, pageSize, page, searchTerm]);
-
 
     const handlePageChange = (newPage: number) => {
         setPage(newPage);
@@ -190,46 +186,31 @@ export default function ProductPage() {
     };
 
     const calculatePriceIndicator = (product: ProductDetail) => {
-        const promotionPrice = product.promotions.length > 0 ? product.promotions[0].promotionPrice : null;
-        const currentPrice = promotionPrice ?? product.price;
-        const initialPrice = product.price;
-
-        if (promotionPrice !== null && promotionPrice < initialPrice) {
-            return 'good';
-        } else if (promotionPrice !== null && promotionPrice > initialPrice) {
+        if (product.analytics.isBuyRecommended === 'no' || product.analytics.priceChangeStatus === 'increased') {
             return 'bad';
+        }
+        else if (product.analytics.isBuyRecommended === 'yes' && product.analytics.priceChangeStatus === 'decreased') {
+            return 'good';
+        }
+        else if (product.analytics.isBuyRecommended === 'yes' && product.analytics.priceChangeStatus === 'unchanged') {
+            return 'neutral';
         }
 
         return 'neutral';
     };
 
     const calculatePriceAnalysis = (product: ProductDetail) => {
-        const initialPrice = product.price;
-        const promotionPrice = product.promotions.length > 0 ? product.promotions[0].promotionPrice : null;
-        const currentPrice = promotionPrice ?? product.price;
+        const priceChange = product.analytics.priceChangeStatus === 'decreased'
+            ? -product.analytics.priceDrop
+            : product.analytics.priceIncrease;
 
-        const priceDrop = initialPrice - currentPrice;
-        const percentageDrop = (priceDrop / initialPrice) * 100;
-
-        let priceDropClass = '';
-        let percentageDropClass = '';
-
-        if (priceDrop > 0) {
-            priceDropClass = 'text-green-500';
-            percentageDropClass = 'text-green-500';
-        } else if (priceDrop < 0) {
-            priceDropClass = 'text-red-500';
-            percentageDropClass = 'text-red-500';
-        } else {
-            priceDropClass = 'text-gray-500';
-            percentageDropClass = 'text-gray-500';
-        }
+        const priceChangeClass = priceChange > 0 ? 'text-red-500' : priceChange < 0 ? 'text-green-500' : 'text-gray-500';
+        const priceChangeSign = priceChange > 0 ? '+' : priceChange < 0 ? '-' : '';
 
         return {
-            priceDrop,
-            percentageDrop,
-            priceDropClass,
-            percentageDropClass
+            priceChange,
+            priceChangeClass,
+            priceChangeSign
         };
     };
 
@@ -240,8 +221,6 @@ export default function ProductPage() {
             setSelectedColumns([...selectedColumns, columnKey]);
         }
     };
-
-
 
     return (
         <section className="bg-gray-50 dark:bg-gray-900 p-3 sm:p-5 antialiased">
@@ -368,8 +347,8 @@ export default function ProductPage() {
                                     {selectedColumns.includes('unitPrice') && <th scope="col" className="p-4">Unit Price</th>}
                                     {selectedColumns.includes('promotionPrice') && <th scope="col" className="p-4">Promotion Price</th>}
                                     {selectedColumns.includes('lastUpdated') && <th scope="col" className="p-4">Last Updated</th>}
-                                    {selectedColumns.includes('priceDrop') && <th scope="col" className="p-4">Price Drop</th>}
-                                    {selectedColumns.includes('percentageDrop') && <th scope="col" className="p-4">Percentage Change</th>}
+                                    {selectedColumns.includes('priceChange') && <th scope="col" className="p-4">Price Change</th>}
+                                    {selectedColumns.includes('percentageChange') && <th scope="col" className="p-4">Percentage Change</th>}
                                     {selectedColumns.includes('averagePrice') && <th scope="col" className="p-4">Average Price</th>}
                                 </tr>
                             </thead>
@@ -386,8 +365,8 @@ export default function ProductPage() {
                                     products.map((product) => {
                                         const indicator = calculatePriceIndicator(product);
                                         const indicatorClass = indicator === 'good' ? 'text-green-500' : indicator === 'bad' ? 'text-red-500' : 'text-gray-500';
-                                        const indicatorText = indicator === 'good' ? 'Good to Buy' : indicator === 'bad' ? 'Wait for Better Price' : 'Neutral';
-                                        const { priceDrop, percentageDrop, priceDropClass, percentageDropClass } = calculatePriceAnalysis(product);
+                                        const indicatorText = indicator === 'good' ? 'Good to Buy' : indicator === 'bad' ? 'High Price' : indicator === 'neutral' ? 'Price not changed' : 'Neutral';
+                                        const { priceChange, priceChangeClass, priceChangeSign } = calculatePriceAnalysis(product);
 
                                         return (
                                             <tr key={product.productId} className="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
@@ -398,8 +377,8 @@ export default function ProductPage() {
                                                 {selectedColumns.includes('unitPrice') && <td className="p-4">€{product.unitPrice?.toFixed(2) ?? 'N/A'} per {product.unitOfMeasure}</td>}
                                                 {selectedColumns.includes('promotionPrice') && <td className="p-4">{product.promotions.length > 0 && product.promotions[0].promotionPrice !== null ? `€${product.promotions[0].promotionPrice?.toFixed(2) ?? 'N/A'}` : 'N/A'}</td>}
                                                 {selectedColumns.includes('lastUpdated') && <td className="p-4">{product.lastUpdated ? new Date(product.lastUpdated).toLocaleDateString() : 'N/A'}</td>}
-                                                {selectedColumns.includes('priceDrop') && <td className={`p-4 ${product.analytics.priceDrop > 0 ? 'text-green-500' : 'text-gray-500'}`}>€{product.analytics.priceDrop.toFixed(2)}</td>}
-                                                {selectedColumns.includes('percentageDrop') && <td className={`p-4 ${product.analytics.percentageChange > 0 ? 'text-green-500' : product.analytics.percentageChange < 0 ? 'text-red-500' : 'text-gray-500'}`}>{product.analytics.percentageChange.toFixed(2)}%</td>}
+                                                {selectedColumns.includes('priceChange') && <td className={`p-4 ${priceChangeClass}`}>{priceChangeSign}€{Math.abs(priceChange).toFixed(2)}</td>}
+                                                {selectedColumns.includes('percentageChange') && <td className={`p-4 ${priceChangeClass}`}>{priceChangeSign}{Math.abs(product.analytics.percentageChange).toFixed(2)}%</td>}
                                                 {selectedColumns.includes('averagePrice') && <td className="p-4">€{product.analytics.averagePrice?.toFixed(2) ?? 'N/A'}</td>}
                                             </tr>
                                         );

@@ -5,8 +5,6 @@ import { GlobalAPI_IP } from "../../compoments/global";
 import ProductPriceChart from "../utils/ProductPriceChart";
 import HistoryTable from "../utils/HistoryTable";
 
-
-
 interface Promotion {
     promotionId: string;
     promotionType: string;
@@ -57,7 +55,7 @@ export default function Page({ params, searchParams }: PageProps) {
             console.log('Fetching product details for:', params.productId, 'with category:', searchParams.category);
 
             try {
-                const response = await axios.get<ProductDetail[]>(`${GlobalAPI_IP}/products/${searchParams.category}/${params.productId}`, {
+                const response = await axios.get<ProductDetail[]>(`http://localhost:3000/products/${searchParams.category}/${params.productId}`, {
                     headers: {
                         accept: 'application/json',
                     },
@@ -146,11 +144,11 @@ export default function Page({ params, searchParams }: PageProps) {
                             <div className="mt-6 p-4">
                                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Price Analysis</h2>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className={`p-4  rounded-lg ${priceStatus === 'decrease' ? 'text-green-600' : 'text-red-600'}`}>
+                                    <div className={`p-4 rounded-lg ${priceStatus === 'decrease' ? 'text-green-600' : 'text-red-600'}`}>
                                         <p className="text-xl font-semibold text-gray-700">Price {priceStatus === 'decrease' ? 'Drop' : 'Increase'}</p>
                                         <p className="text-2xl font-bold">€{Math.abs(priceDrop).toFixed(2)}</p>
                                     </div>
-                                    <div className={`p-4  rounded-lg ${priceStatus === 'decrease' ? 'text-green-600' : 'text-red-600'}`}>
+                                    <div className={`p-4 rounded-lg ${priceStatus === 'decrease' ? 'text-green-600' : 'text-red-600'}`}>
                                         <p className="text-xl font-semibold text-gray-700">Percentage {priceStatus === 'decrease' ? 'Drop' : 'Increase'}</p>
                                         <p className="text-2xl font-bold">{Math.abs(percentageDrop).toFixed(2)}%</p>
                                     </div>

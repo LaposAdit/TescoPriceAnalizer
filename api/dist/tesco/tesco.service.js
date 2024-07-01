@@ -104,13 +104,11 @@ let TescoService = class TescoService {
             'grilovanie', 'alkohol',
         ];
         const availableCategories = new Set(allCategories);
-        const fetchLatestProducts = async (model, where, skip, take, category) => {
+        const fetchLatestProducts = async (model, where, category) => {
             const latestProducts = await model.findMany({
                 where,
                 orderBy: [{ productId: 'asc' }, { lastUpdated: 'desc' }],
                 distinct: ['productId'],
-                skip,
-                take,
                 include: { promotions: true },
             });
             return latestProducts.map(product => this.transformProduct({ ...product, category }));
@@ -129,16 +127,15 @@ let TescoService = class TescoService {
                 { model: 'alkohol', category: 'alkohol' },
             ];
             let allResults = [];
-            let totalProducts = 0;
             for (const { model, category } of models) {
                 const where = this.createWhereClause(sale);
                 const modelInstance = this.prisma[model];
-                const categoryProducts = await fetchLatestProducts(modelInstance, where, skip, take, category);
-                totalProducts += categoryProducts.length;
+                const categoryProducts = await fetchLatestProducts(modelInstance, where, category);
                 allResults.push(...categoryProducts);
             }
+            const totalProducts = allResults.length;
             const totalPages = Math.ceil(totalProducts / pageSize);
-            const paginatedProducts = allResults.slice(0, take);
+            const paginatedProducts = allResults.slice(skip, skip + take);
             return {
                 totalPages,
                 totalProducts,
@@ -149,13 +146,14 @@ let TescoService = class TescoService {
         else {
             const model = this.getPrismaModel(category);
             const where = this.createWhereClause(sale);
-            const products = await fetchLatestProducts(model, where, skip, take, category);
-            const totalProducts = products.length;
+            const allProducts = await fetchLatestProducts(model, where, category);
+            const totalProducts = allProducts.length;
             const totalPages = Math.ceil(totalProducts / pageSize);
+            const paginatedProducts = allProducts.slice(skip, skip + take);
             return {
                 totalPages,
                 totalProducts,
-                products,
+                products: paginatedProducts,
                 availableCategories: Array.from(availableCategories),
             };
         }
@@ -247,10 +245,17 @@ let TescoService = class TescoService {
         const searchPromises = models.map(({ model, category }) => this.searchModelForTerm(model, searchTerm, sale, category));
         const searchResults = await Promise.all(searchPromises);
         const productsFromDb = searchResults.flat();
-        const totalProducts = productsFromDb.length;
+        const latestProductsMap = new Map();
+        productsFromDb.forEach(product => {
+            if (!latestProductsMap.has(product.productId) || latestProductsMap.get(product.productId).lastUpdated < product.lastUpdated) {
+                latestProductsMap.set(product.productId, product);
+            }
+        });
+        const latestProducts = Array.from(latestProductsMap.values());
+        const totalProducts = latestProducts.length;
         const totalPages = Math.ceil(totalProducts / pageSize);
         const skip = (page - 1) * pageSize;
-        const paginatedProducts = productsFromDb.slice(skip, skip + pageSize);
+        const paginatedProducts = latestProducts.slice(skip, skip + pageSize);
         const transformedProducts = paginatedProducts.map((product) => ({
             dbId: product.id,
             productId: product.productId,
@@ -282,7 +287,7 @@ let TescoService = class TescoService {
             availableCategories: Array.from(availableCategories),
         };
     }
-    async getProductsAnalytics(category, page, pageSize, sale) {
+    async getProductsAnalytics(category, page, pageSize, sale, sortBy, sortOrder, minPriceDrop, maxPriceIncrease, minPercentageChange, isBuyRecommended, isOnSale, priceChangeStatus) {
         const skip = (page - 1) * pageSize;
         const take = Number(pageSize);
         const allCategories = [
@@ -291,72 +296,27 @@ let TescoService = class TescoService {
             'grilovanie', 'alkohol',
         ];
         const availableCategories = new Set(allCategories);
-        const fetchProductsWithAnalytics = async (model, where, skip, take, category) => {
+        const fetchProductsWithAnalytics = async (model, where, category) => {
             const latestProducts = await model.findMany({
                 where,
-                skip,
-                take,
-                select: {
-                    id: true,
-                    productId: true,
-                    title: true,
-                    price: true,
-                    unitPrice: true,
-                    imageUrl: true,
-                    unitOfMeasure: true,
-                    isForSale: true,
-                    aisleName: true,
-                    superDepartmentName: true,
-                    promotions: {
-                        select: {
-                            promotionId: true,
-                            promotionType: true,
-                            startDate: true,
-                            endDate: true,
-                            offerText: true,
-                            attributes: true,
-                            promotionPrice: true,
-                        },
-                    },
-                    lastUpdated: true,
+                include: {
+                    promotions: true,
                 },
                 orderBy: { lastUpdated: 'desc' },
                 distinct: ['productId'],
             });
-            const productPromises = latestProducts.map(async (product) => {
-                try {
-                    const productHistory = await model.findMany({
-                        where: { productId: product.productId },
-                        select: {
-                            id: true,
-                            price: true,
-                            unitPrice: true,
-                            promotions: {
-                                select: {
-                                    promotionId: true,
-                                    promotionType: true,
-                                    startDate: true,
-                                    endDate: true,
-                                    offerText: true,
-                                    attributes: true,
-                                    promotionPrice: true,
-                                },
-                            },
-                            lastUpdated: true,
-                        },
-                        orderBy: { lastUpdated: 'desc' },
-                    });
-                    const analytics = this.calculateAnalytics(productHistory);
-                    return this.transformProductWithAnalytics({ ...product, category }, analytics);
-                }
-                catch (error) {
-                    console.error(`Error processing product ${product.productId}:`, error);
-                    return this.transformProductWithAnalytics({ ...product, category }, null);
-                }
-            });
-            const productsWithAnalytics = await Promise.all(productPromises);
+            const productsWithAnalytics = await Promise.all(latestProducts.map(async (product) => {
+                const productHistory = await model.findMany({
+                    where: { productId: product.productId },
+                    include: { promotions: true },
+                    orderBy: { lastUpdated: 'desc' },
+                });
+                const analytics = this.calculateAnalytics(productHistory);
+                return this.transformProductWithAnalytics({ ...product, category }, analytics);
+            }));
             return productsWithAnalytics;
         };
+        let allResults = [];
         if (category === 'all') {
             const models = [
                 { model: 'trvanlivePotraviny', category: 'trvanlivePotraviny' },
@@ -370,47 +330,38 @@ let TescoService = class TescoService {
                 { model: 'grilovanie', category: 'grilovanie' },
                 { model: 'alkohol', category: 'alkohol' },
             ];
-            let allResults = [];
-            let totalProducts = 0;
             for (const { model, category } of models) {
                 const where = this.createWhereClause(sale);
                 const modelInstance = this.prisma[model];
-                const distinctProductIds = await modelInstance.findMany({
-                    where,
-                    select: { productId: true },
-                    distinct: ['productId'],
-                });
-                totalProducts += distinctProductIds.length;
-                const categoryProducts = await fetchProductsWithAnalytics(modelInstance, where, skip, take, category);
+                const categoryProducts = await fetchProductsWithAnalytics(modelInstance, where, category);
                 allResults.push(...categoryProducts);
             }
-            const totalPages = Math.ceil(totalProducts / pageSize);
-            const paginatedProducts = allResults.slice(skip, skip + take);
-            return {
-                totalPages,
-                totalProducts,
-                products: paginatedProducts,
-                availableCategories: Array.from(availableCategories),
-            };
         }
         else {
             const model = this.getPrismaModel(category);
             const where = this.createWhereClause(sale);
-            const distinctProductIds = await model.findMany({
-                where,
-                select: { productId: true },
-                distinct: ['productId'],
-            });
-            const totalProducts = distinctProductIds.length;
-            const totalPages = Math.ceil(totalProducts / pageSize);
-            const products = await fetchProductsWithAnalytics(model, where, skip, take, category);
-            return {
-                totalPages,
-                totalProducts,
-                products,
-                availableCategories: Array.from(availableCategories),
-            };
+            allResults = await fetchProductsWithAnalytics(model, where, category);
         }
+        let filteredProducts = this.applyAnalyticsFilters(allResults, {
+            minPriceDrop,
+            maxPriceIncrease,
+            minPercentageChange,
+            isBuyRecommended,
+            isOnSale,
+            priceChangeStatus
+        });
+        if (sortBy && sortOrder) {
+            filteredProducts = this.sortProductsByAnalytics(filteredProducts, sortBy, sortOrder);
+        }
+        const totalProducts = filteredProducts.length;
+        const totalPages = Math.ceil(totalProducts / pageSize);
+        const paginatedProducts = filteredProducts.slice(skip, skip + take);
+        return {
+            totalPages,
+            totalProducts,
+            products: paginatedProducts,
+            availableCategories: Array.from(availableCategories),
+        };
     }
     calculateAnalytics(products) {
         if (products.length < 2) {
@@ -486,6 +437,147 @@ let TescoService = class TescoService {
             priceChangeStatus: priceChangeStatus,
             averagePrice: averagePrice
         };
+    }
+    async searchProductsByNameWithAnalytics(searchTerm, page, pageSize, sale, category, sortBy, sortOrder, minPriceDrop, maxPriceIncrease, minPercentageChange, isBuyRecommended, isOnSale, priceChangeStatus) {
+        const allCategories = [
+            'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny',
+            'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky',
+            'grilovanie', 'alkohol',
+        ];
+        const availableCategories = new Set(allCategories);
+        let models;
+        if (category) {
+            models = [{ model: this.getPrismaModel(category), category }];
+        }
+        else {
+            models = allCategories.map(cat => ({ model: this.getPrismaModel(cat), category: cat }));
+        }
+        const searchModelForTermWithAnalytics = async (model, searchTerm, sale, category) => {
+            const where = {
+                title: {
+                    contains: searchTerm,
+                    mode: 'insensitive',
+                },
+            };
+            if (sale !== undefined) {
+                where['hasPromotions'] = sale;
+            }
+            const results = await model.findMany({
+                where,
+                include: { promotions: true },
+                orderBy: { lastUpdated: 'desc' }
+            });
+            const productsWithAnalytics = await Promise.all(results.map(async (product) => {
+                const productHistory = await model.findMany({
+                    where: { productId: product.productId },
+                    include: { promotions: true },
+                    orderBy: { lastUpdated: 'desc' },
+                });
+                const analytics = this.calculateAnalytics(productHistory);
+                return this.transformProductWithAnalytics({ ...product, category }, analytics);
+            }));
+            return productsWithAnalytics;
+        };
+        const searchPromises = models.map(({ model, category }) => searchModelForTermWithAnalytics(model, searchTerm, sale, category));
+        const searchResults = await Promise.all(searchPromises);
+        const productsFromDb = searchResults.flat();
+        const latestProductsMap = new Map();
+        productsFromDb.forEach(product => {
+            if (!latestProductsMap.has(product.productId) || latestProductsMap.get(product.productId).lastUpdated < product.lastUpdated) {
+                latestProductsMap.set(product.productId, product);
+            }
+        });
+        let filteredProducts = Array.from(latestProductsMap.values());
+        filteredProducts = this.applyAnalyticsFilters(filteredProducts, {
+            minPriceDrop,
+            maxPriceIncrease,
+            minPercentageChange,
+            isBuyRecommended,
+            isOnSale,
+            priceChangeStatus
+        });
+        if (sortBy && sortOrder) {
+            filteredProducts = this.sortProductsByAnalytics(filteredProducts, sortBy, sortOrder);
+        }
+        const totalProducts = filteredProducts.length;
+        const totalPages = Math.ceil(totalProducts / pageSize);
+        const skip = (page - 1) * pageSize;
+        const paginatedProducts = filteredProducts.slice(skip, skip + pageSize);
+        return {
+            totalPages,
+            totalProducts,
+            products: paginatedProducts,
+            availableCategories: Array.from(availableCategories),
+        };
+    }
+    async searchModelForTermWithAnalytics(model, searchTerm, sale, category) {
+        const where = {
+            title: {
+                contains: searchTerm,
+                mode: 'insensitive',
+            },
+        };
+        if (sale !== undefined) {
+            where['hasPromotions'] = sale;
+        }
+        const results = await model.findMany({
+            where,
+            include: { promotions: true },
+            orderBy: { lastUpdated: 'desc' }
+        });
+        const productsWithAnalytics = await Promise.all(results.map(async (product) => {
+            const productHistory = await model.findMany({
+                where: { productId: product.productId },
+                include: { promotions: true },
+                orderBy: { lastUpdated: 'desc' },
+            });
+            const analytics = this.calculateAnalytics(productHistory);
+            return this.transformProductWithAnalytics({ ...product, category }, analytics);
+        }));
+        return productsWithAnalytics;
+    }
+    applyAnalyticsFilters(products, filters) {
+        return products.filter(product => {
+            const analytics = product.analytics;
+            if (filters.minPriceDrop !== undefined && analytics.priceDrop < filters.minPriceDrop)
+                return false;
+            if (filters.maxPriceIncrease !== undefined && analytics.priceIncrease > filters.maxPriceIncrease)
+                return false;
+            if (filters.minPercentageChange !== undefined && Math.abs(analytics.percentageChange) < filters.minPercentageChange)
+                return false;
+            if (filters.isBuyRecommended !== undefined && analytics.isBuyRecommended !== filters.isBuyRecommended)
+                return false;
+            if (filters.isOnSale !== undefined && analytics.isOnSale !== filters.isOnSale)
+                return false;
+            if (filters.priceChangeStatus !== undefined && analytics.priceChangeStatus !== filters.priceChangeStatus)
+                return false;
+            return true;
+        });
+    }
+    sortProductsByAnalytics(products, sortBy, sortOrder) {
+        return products.sort((a, b) => {
+            let comparison = 0;
+            switch (sortBy) {
+                case 'priceDrop':
+                    comparison = a.analytics.priceDrop - b.analytics.priceDrop;
+                    break;
+                case 'priceIncrease':
+                    comparison = a.analytics.priceIncrease - b.analytics.priceIncrease;
+                    break;
+                case 'percentageChange':
+                    comparison = a.analytics.percentageChange - b.analytics.percentageChange;
+                    break;
+                case 'previousPrice':
+                    comparison = a.analytics.previousPrice - b.analytics.previousPrice;
+                    break;
+                case 'averagePrice':
+                    comparison = a.analytics.averagePrice - b.analytics.averagePrice;
+                    break;
+                default:
+                    return 0;
+            }
+            return sortOrder === 'asc' ? comparison : -comparison;
+        });
     }
 };
 exports.TescoService = TescoService;
