@@ -198,6 +198,9 @@ export default function ProductPage() {
         else if ( product.analytics.isOnSale === true && product.analytics.isBuyRecommended === 'yes' && product.analytics.priceChangeStatus === 'unchanged') {
             return 'sale';
         }
+        else if ( product.analytics.isOnSale === true && product.analytics.isBuyRecommended === 'yes' && product.analytics.priceChangeStatus === 'unknown') {
+            return 'sale';
+        }
         else if (product.analytics.isBuyRecommended === 'yes' && product.analytics.priceChangeStatus === 'unchanged') {
             return 'neutral';
         }

@@ -206,26 +206,6 @@ export class TescoService {
         };
     }
 
-    private createWhereClause(sale?: boolean) {
-        const where: Record<string, any> = {};
-        if (sale !== undefined) {
-            where['promotions'] = sale ? { some: {} } : { none: {} };
-        }
-        return where;
-    }
-
-
-    /*
-    private createWhereClause(sale?: boolean) {
-        const where: Record<string, any> = {};
-        if (sale !== undefined) {
-            where['promotions'] = {
-                some: {},
-            };
-        }
-        return where;
-    }
-*/
 
     async getProductById(category: string, productId: string): Promise<any[]> {
         const model = this.getPrismaModel(category);
@@ -265,28 +245,6 @@ export class TescoService {
 
 
 
-    private async searchModelForTerm(model: any, searchTerm: string, sale?: boolean, category?: string) {
-        const where: Record<string, any> = {
-            title: {
-                contains: searchTerm,
-                mode: 'insensitive',
-            },
-        };
-        if (sale !== undefined) {
-            where['hasPromotions'] = sale;
-        }
-
-        const results = await model.findMany({
-            where,
-            include: { promotions: true },
-            orderBy: { lastUpdated: 'desc' }
-        });
-
-        return results.map((product: any) => ({
-            ...product,
-            category
-        }));
-    }
 
 
 
@@ -520,24 +478,13 @@ export class TescoService {
         };
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
     async getProductsAnalytics(
         category: string,
         page: number,
         pageSize: number,
         sale?: boolean,
-        randomize?: boolean
+        randomize?: boolean,
+        sortFields?: { field: string; order: 'asc' | 'desc' }[]
     ): Promise<any> {
         const skip = (page - 1) * pageSize;
         const take = Number(pageSize);
@@ -547,48 +494,6 @@ export class TescoService {
             'grilovanie', 'alkohol',
         ];
         const availableCategories: Set<string> = new Set(allCategories);
-
-        const fetchLatestProducts = async (model: any, category: string, sale?: boolean) => {
-            let whereClause = {};
-            if (sale === true) {
-                whereClause = { hasPromotions: true };
-            } else if (sale === false) {
-                whereClause = { hasPromotions: false };
-            }
-            // If sale is undefined, we don't add any condition to whereClause
-
-            // Find the most recent date
-            const latestDate = await model.findFirst({
-                where: whereClause,
-                orderBy: { lastUpdated: 'desc' },
-                select: { lastUpdated: true },
-            });
-
-            if (!latestDate) {
-                console.log(`No products found for category: ${category} with sale filter: ${sale}`);
-                return { products: [], totalCount: 0 };
-            }
-
-            // Fetch products from the latest date
-            const products = await model.findMany({
-                where: {
-                    ...whereClause,
-                    lastUpdated: {
-                        gte: new Date(latestDate.lastUpdated.toDateString()),  // Start of the day
-                        lt: new Date(new Date(latestDate.lastUpdated).setDate(latestDate.lastUpdated.getDate() + 1))  // Start of the next day
-                    },
-                },
-                include: { promotions: true },
-                orderBy: { productId: 'asc' },
-            });
-
-            console.log(`Fetched ${products.length} latest products for category: ${category} with sale filter: ${sale}`);
-
-            return {
-                products: products.map(product => this.transformProduct({ ...product, category })),
-                totalCount: products.length,
-            };
-        };
 
         const fetchProductAnalytics = async (category: string) => {
             const model = this.getPrismaModel(category);
@@ -620,7 +525,25 @@ export class TescoService {
                 });
             });
 
-            const products = Array.from(productMap.values());
+            let products = Array.from(productMap.values());
+
+            // Apply sorting if sortFields are provided
+            if (sortFields && sortFields.length > 0) {
+                products.sort((a, b) => {
+                    for (const { field, order } of sortFields) {
+                        const aValue = a.analytics ? a.analytics[field] : 0;
+                        const bValue = b.analytics ? b.analytics[field] : 0;
+                        if (aValue !== bValue) {
+                            if (order === 'desc') {
+                                return bValue - aValue;
+                            } else {
+                                return aValue - bValue;
+                            }
+                        }
+                    }
+                    return 0;
+                });
+            }
 
             return {
                 products,
@@ -658,7 +581,7 @@ export class TescoService {
             if (randomize) {
                 products = allProducts.sort(() => Math.random() - 0.5).slice(skip, skip + take);
             } else {
-                products = allProducts.sort((a, b) => a.productId.localeCompare(b.productId)).slice(skip, skip + take);
+                products = allProducts.slice(skip, skip + take);
             }
 
             totalProducts = allProducts.length;
@@ -671,7 +594,6 @@ export class TescoService {
                 products.sort(() => Math.random() - 0.5);
             }
 
-            // Apply pagination for single category
             products = products.slice(skip, skip + take);
         }
 
@@ -688,11 +610,14 @@ export class TescoService {
         };
     }
 
-
-
-
-
-    async searchProductsByNameWithAnalytics(searchTerm: string, page: number, pageSize: number, sale?: boolean, category?: string): Promise<any> {
+    async searchProductsByNameWithAnalytics(
+        searchTerm: string,
+        page: number,
+        pageSize: number,
+        sale?: boolean,
+        category?: string,
+        sortFields?: { field: string; order: 'asc' | 'desc' }[]
+    ): Promise<any> {
         const allCategories = [
             'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny',
             'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky',
@@ -713,7 +638,6 @@ export class TescoService {
         const searchResults = await Promise.all(searchPromises);
         const productsFromDb = searchResults.flat();
 
-        // Get the latest product by productId
         const latestProductsMap = new Map();
         productsFromDb.forEach(product => {
             if (!latestProductsMap.has(product.productId) || latestProductsMap.get(product.productId).lastUpdated < product.lastUpdated) {
@@ -722,6 +646,24 @@ export class TescoService {
         });
 
         const latestProducts = Array.from(latestProductsMap.values());
+
+        if (sortFields && sortFields.length > 0) {
+            latestProducts.sort((a, b) => {
+                for (const { field, order } of sortFields) {
+                    const aValue = a.analytics ? a.analytics[field] : 0;
+                    const bValue = b.analytics ? b.analytics[field] : 0;
+                    if (aValue !== bValue) {
+                        if (order === 'desc') {
+                            return bValue - aValue;
+                        } else {
+                            return aValue - bValue;
+                        }
+                    }
+                }
+                return 0;
+            });
+        }
+
         const totalProducts = latestProducts.length;
         const totalPages = Math.ceil(totalProducts / pageSize);
         const skip = (page - 1) * pageSize;
@@ -735,6 +677,8 @@ export class TescoService {
             availableCategories: Array.from(availableCategories),
         };
     }
+
+
 
     private async searchModelForTermWithAnalytics(model: any, searchTerm: string, sale?: boolean, category?: string) {
         const where: Record<string, any> = {

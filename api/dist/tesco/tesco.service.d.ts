@@ -6,13 +6,17 @@ export declare class TescoService {
     private transformProductWithAnalytics;
     private getPrismaModel;
     getProducts(category: string, page: number, pageSize: number, sale?: boolean, randomize?: boolean): Promise<any>;
-    private createWhereClause;
     getProductById(category: string, productId: string): Promise<any[]>;
-    private searchModelForTerm;
     searchProductsByName(searchTerm: string, page: number, pageSize: number, sale?: boolean, category?: string): Promise<any>;
     calculateAndStoreAnalytics(category: string): Promise<void>;
     private calculateAnalytics;
-    getProductsAnalytics(category: string, page: number, pageSize: number, sale?: boolean, randomize?: boolean): Promise<any>;
-    searchProductsByNameWithAnalytics(searchTerm: string, page: number, pageSize: number, sale?: boolean, category?: string): Promise<any>;
+    getProductsAnalytics(category: string, page: number, pageSize: number, sale?: boolean, randomize?: boolean, sortFields?: {
+        field: string;
+        order: 'asc' | 'desc';
+    }[]): Promise<any>;
+    searchProductsByNameWithAnalytics(searchTerm: string, page: number, pageSize: number, sale?: boolean, category?: string, sortFields?: {
+        field: string;
+        order: 'asc' | 'desc';
+    }[]): Promise<any>;
     private searchModelForTermWithAnalytics;
 }

@@ -183,13 +183,6 @@ let TescoService = class TescoService {
             availableCategories: Array.from(availableCategories),
         };
     }
-    createWhereClause(sale) {
-        const where = {};
-        if (sale !== undefined) {
-            where['promotions'] = sale ? { some: {} } : { none: {} };
-        }
-        return where;
-    }
     async getProductById(category, productId) {
         const model = this.getPrismaModel(category);
         const productsFromDb = await model.findMany({
@@ -220,26 +213,6 @@ let TescoService = class TescoService {
             })),
             hasPromotions: product.promotions.length > 0,
             lastUpdated: product.lastUpdated,
-        }));
-    }
-    async searchModelForTerm(model, searchTerm, sale, category) {
-        const where = {
-            title: {
-                contains: searchTerm,
-                mode: 'insensitive',
-            },
-        };
-        if (sale !== undefined) {
-            where['hasPromotions'] = sale;
-        }
-        const results = await model.findMany({
-            where,
-            include: { promotions: true },
-            orderBy: { lastUpdated: 'desc' }
-        });
-        return results.map((product) => ({
-            ...product,
-            category
         }));
     }
     async searchProductsByName(searchTerm, page, pageSize, sale, category) {
@@ -318,7 +291,6 @@ let TescoService = class TescoService {
                     take: 5,
                     include: { promotions: true }
                 });
-                console.log(`Product data: ${JSON.stringify(product)}`);
                 const analytics = this.calculateAnalytics([product, ...history.slice(1)]);
                 const updateData = {
                     ...analytics,
@@ -423,7 +395,7 @@ let TescoService = class TescoService {
             promotionImpact
         };
     }
-    async getProductsAnalytics(category, page, pageSize, sale, randomize) {
+    async getProductsAnalytics(category, page, pageSize, sale, randomize, sortFields) {
         const skip = (page - 1) * pageSize;
         const take = Number(pageSize);
         const allCategories = [
@@ -432,40 +404,6 @@ let TescoService = class TescoService {
             'grilovanie', 'alkohol',
         ];
         const availableCategories = new Set(allCategories);
-        const fetchLatestProducts = async (model, category, sale) => {
-            let whereClause = {};
-            if (sale === true) {
-                whereClause = { hasPromotions: true };
-            }
-            else if (sale === false) {
-                whereClause = { hasPromotions: false };
-            }
-            const latestDate = await model.findFirst({
-                where: whereClause,
-                orderBy: { lastUpdated: 'desc' },
-                select: { lastUpdated: true },
-            });
-            if (!latestDate) {
-                console.log(`No products found for category: ${category} with sale filter: ${sale}`);
-                return { products: [], totalCount: 0 };
-            }
-            const products = await model.findMany({
-                where: {
-                    ...whereClause,
-                    lastUpdated: {
-                        gte: new Date(latestDate.lastUpdated.toDateString()),
-                        lt: new Date(new Date(latestDate.lastUpdated).setDate(latestDate.lastUpdated.getDate() + 1))
-                    },
-                },
-                include: { promotions: true },
-                orderBy: { productId: 'asc' },
-            });
-            console.log(`Fetched ${products.length} latest products for category: ${category} with sale filter: ${sale}`);
-            return {
-                products: products.map(product => this.transformProduct({ ...product, category })),
-                totalCount: products.length,
-            };
-        };
         const fetchProductAnalytics = async (category) => {
             const model = this.getPrismaModel(category);
             let whereClause = {};
@@ -490,7 +428,24 @@ let TescoService = class TescoService {
                     analytics: analytics.find(a => a.productId === product.productId)
                 });
             });
-            const products = Array.from(productMap.values());
+            let products = Array.from(productMap.values());
+            if (sortFields && sortFields.length > 0) {
+                products.sort((a, b) => {
+                    for (const { field, order } of sortFields) {
+                        const aValue = a.analytics ? a.analytics[field] : 0;
+                        const bValue = b.analytics ? b.analytics[field] : 0;
+                        if (aValue !== bValue) {
+                            if (order === 'desc') {
+                                return bValue - aValue;
+                            }
+                            else {
+                                return aValue - bValue;
+                            }
+                        }
+                    }
+                    return 0;
+                });
+            }
             return {
                 products,
                 totalCount: products.length,
@@ -523,7 +478,7 @@ let TescoService = class TescoService {
                 products = allProducts.sort(() => Math.random() - 0.5).slice(skip, skip + take);
             }
             else {
-                products = allProducts.sort((a, b) => a.productId.localeCompare(b.productId)).slice(skip, skip + take);
+                products = allProducts.slice(skip, skip + take);
             }
             totalProducts = allProducts.length;
         }
@@ -546,7 +501,7 @@ let TescoService = class TescoService {
             availableCategories: Array.from(availableCategories),
         };
     }
-    async searchProductsByNameWithAnalytics(searchTerm, page, pageSize, sale, category) {
+    async searchProductsByNameWithAnalytics(searchTerm, page, pageSize, sale, category, sortFields) {
         const allCategories = [
             'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny',
             'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky',
@@ -570,6 +525,23 @@ let TescoService = class TescoService {
             }
         });
         const latestProducts = Array.from(latestProductsMap.values());
+        if (sortFields && sortFields.length > 0) {
+            latestProducts.sort((a, b) => {
+                for (const { field, order } of sortFields) {
+                    const aValue = a.analytics ? a.analytics[field] : 0;
+                    const bValue = b.analytics ? b.analytics[field] : 0;
+                    if (aValue !== bValue) {
+                        if (order === 'desc') {
+                            return bValue - aValue;
+                        }
+                        else {
+                            return aValue - bValue;
+                        }
+                    }
+                }
+                return 0;
+            });
+        }
         const totalProducts = latestProducts.length;
         const totalPages = Math.ceil(totalProducts / pageSize);
         const skip = (page - 1) * pageSize;
