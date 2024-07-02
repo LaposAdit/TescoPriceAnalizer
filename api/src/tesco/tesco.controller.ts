@@ -1,5 +1,5 @@
-import { Controller, Get, Query, Param } from '@nestjs/common';
-import { ApiResponse, ApiTags, ApiQuery, ApiOperation } from '@nestjs/swagger';
+import { Controller, Get, Post, Query, Param, Body } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { ProductCategory } from 'src/enum/product-category.enum';
 import { TescoService } from './tesco.service';
 import { GenericResponse } from 'src/dto/Tesco-ResponsDTO';
@@ -33,6 +33,23 @@ export class TescoController {
     }
 
 
+    @Post('calculate-analytics')
+    @ApiOperation({ summary: 'Calculate and store analytics for products' })
+    @ApiQuery({ name: 'category', required: true, enum: ['all', 'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny', 'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky', 'grilovanie', 'alkohol'] })
+    @ApiResponse({ status: 200, description: 'Analytics calculated and stored successfully' })
+    async calculateAnalytics(@Query('category') category: string) {
+        if (category === 'all') {
+            const categories = ['trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny', 'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky', 'grilovanie', 'alkohol'];
+            for (const cat of categories) {
+                await this.service.calculateAndStoreAnalytics(cat);
+            }
+        } else {
+            await this.service.calculateAndStoreAnalytics(category);
+        }
+        return { message: 'Analytics calculated and stored successfully' };
+    }
+
+
     @Get()
     @ApiQuery({
         name: 'category',
@@ -43,18 +60,20 @@ export class TescoController {
     @ApiQuery({ name: 'page', required: false, description: 'Page number', type: Number })
     @ApiQuery({ name: 'pageSize', required: false, description: 'Number of items per page', type: Number })
     @ApiQuery({ name: 'sale', required: false, description: 'Filter by sale', type: Boolean })
+    @ApiQuery({ name: 'randomize', required: false, description: 'Randomize the order of products', type: Boolean })
     @ApiResponse({ status: 200, description: 'The products have been successfully fetched from the database.', type: Object })
     async getProductsFromDb(
         @Query('category') category: string = 'all',
         @Query('page') page = 1,
         @Query('pageSize') pageSize = 25,
-        @Query('sale') sale?: string
-    ): Promise<GenericResponse<any>> {
+        @Query('sale') sale?: string,
+        @Query('randomize') randomize?: string
+    ): Promise<any> {
         const saleBoolean = sale === 'true' ? true : sale === 'false' ? false : undefined;
+        const randomizeBoolean = randomize === 'true';
 
-        return this.service.getProducts(category, page, pageSize, saleBoolean);
+        return this.service.getProducts(category, page, pageSize, saleBoolean, randomizeBoolean);
     }
-
 
     @ApiOperation({ summary: 'Search products by name with analytics' })
     @ApiQuery({ name: 'searchTerm', required: true, description: 'Search term for product title' })
