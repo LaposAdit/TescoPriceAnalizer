@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import axios from 'axios';
 import ProductPriceChart from "../utils/ProductPriceChart";
 import HistoryTable from "../utils/HistoryTable";
+import { useUser } from '@clerk/clerk-react';
 
 interface Promotion {
     promotionId: string;
@@ -13,6 +14,15 @@ interface Promotion {
     attributes: string[];
     promotionPrice: number | null;
 }
+
+interface Favorite {
+    id: number;
+    userId: string;
+    productId: string;
+    category: string;
+    createdAt: string;
+}
+
 
 interface ProductDetail {
     productId: string;
@@ -63,6 +73,12 @@ export default function Page({ params, searchParams }: PageProps) {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+    const { user } = useUser();
+
+    if (user) {
+        console.log(user.id); // This will log the user's ID
+    }
+
 
     useEffect(() => {
         const fetchProductDetail = async () => {
@@ -104,6 +120,37 @@ export default function Page({ params, searchParams }: PageProps) {
         fetchProductDetail();
     }, [params.productId, searchParams.category]);
 
+
+    // Handle add to favorites
+    const addToFavorites = async () => {
+        if (!user) {
+            // Handle user not logged in scenario
+            return;
+        }
+
+        try {
+            const favorite: Favorite = {
+                id: 2,  // Replace with dynamic ID or manage on server side
+                userId: user.id,
+                productId: params.productId,
+                category: searchParams.category,
+                createdAt: new Date().toISOString()
+            };
+
+            const response = await axios.post('http://localhost:3000/favorites', favorite, {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            console.log('Added to favorites:', response.data);
+            // Handle success (e.g., show a success message)
+        } catch (error) {
+            console.error('Error adding to favorites:', error);
+            // Handle error (e.g., show an error message)
+        }
+    };
+
     // Preprocess the history data to consolidate prices by date
     const consolidatedHistory = history.reduce((acc, item) => {
         const date = new Date(item.lastUpdated).toLocaleDateString();
@@ -135,7 +182,7 @@ export default function Page({ params, searchParams }: PageProps) {
             ) : product ? (
                 <div className="flex flex-col xl:flex-row gap-8">
                     <div className="w-full xl:w-1/3">
-                        
+
                         <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-4">
                             <img className="w-40 h-40 object-contain rounded-md" src={product.imageUrl} alt={product.title} />
                             <div className="flex flex-col space-y-1">
@@ -145,6 +192,11 @@ export default function Page({ params, searchParams }: PageProps) {
                                 <div className="flex items-center space-x-2">
                                     <span className="inline-block px-2 py-1 text-xs font-semibold text-white bg-blue-500 rounded-full">Sale: {product.hasPromotions ? 'Yes' : 'No'}</span>
                                 </div>
+                            </div>
+                            <div className="flex justify-end mt-4">
+                                <button onClick={addToFavorites} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md shadow-md">
+                                    Add to Favorites
+                                </button>
                             </div>
                         </div>
 

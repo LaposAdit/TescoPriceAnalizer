@@ -25,6 +25,7 @@ export class FavoriteService {
         });
     }
 
+
     private getPrismaModel(category: ProductCategory) {
         const modelMapping: Record<ProductCategory, any> = {
             [ProductCategory.TrvanlivePotraviny]: this.prisma.trvanlivePotraviny,
@@ -50,10 +51,19 @@ export class FavoriteService {
         const favoriteProducts = await Promise.all(
             favorites.map(async (favorite) => {
                 const model = this.getPrismaModel(favorite.category as ProductCategory);
-                const product = await model.findUnique({
+                const product = await model.findFirst({
                     where: { productId: favorite.productId },
-                    include: { promotions: true }
+                    include: {
+                        promotions: true,
+                        ProductAnalytics: true
+                    },
+                    orderBy: { lastUpdated: 'desc' }
                 });
+
+                if (!product) {
+                    return null; // Handle case where product is not found
+                }
+
                 return {
                     ...favorite,
                     product: {
@@ -77,11 +87,26 @@ export class FavoriteService {
                         })),
                         hasPromotions: product.promotions.length > 0,
                         lastUpdated: product.lastUpdated,
+                        analytics: product.ProductAnalytics ? {
+                            priceDrop: product.ProductAnalytics.priceDrop,
+                            priceIncrease: product.ProductAnalytics.priceIncrease,
+                            percentageChange: product.ProductAnalytics.percentageChange,
+                            isBuyRecommended: product.ProductAnalytics.isBuyRecommended,
+                            isOnSale: product.ProductAnalytics.isOnSale,
+                            previousPrice: product.ProductAnalytics.previousPrice,
+                            priceChangeStatus: product.ProductAnalytics.priceChangeStatus,
+                            averagePrice: product.ProductAnalytics.averagePrice,
+                            medianPrice: product.ProductAnalytics.medianPrice,
+                            priceStdDev: product.ProductAnalytics.priceStdDev,
+                            promotionImpact: product.ProductAnalytics.promotionImpact,
+                            lastCalculated: product.ProductAnalytics.lastCalculated,
+                        } : null,
                     },
                 };
             })
         );
 
-        return favoriteProducts;
+        // Filter out any null results (products not found)
+        return favoriteProducts.filter(product => product !== null);
     }
 }

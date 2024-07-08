@@ -55,10 +55,17 @@ let FavoriteService = class FavoriteService {
         });
         const favoriteProducts = await Promise.all(favorites.map(async (favorite) => {
             const model = this.getPrismaModel(favorite.category);
-            const product = await model.findUnique({
+            const product = await model.findFirst({
                 where: { productId: favorite.productId },
-                include: { promotions: true }
+                include: {
+                    promotions: true,
+                    ProductAnalytics: true
+                },
+                orderBy: { lastUpdated: 'desc' }
             });
+            if (!product) {
+                return null;
+            }
             return {
                 ...favorite,
                 product: {
@@ -82,10 +89,24 @@ let FavoriteService = class FavoriteService {
                     })),
                     hasPromotions: product.promotions.length > 0,
                     lastUpdated: product.lastUpdated,
+                    analytics: product.ProductAnalytics ? {
+                        priceDrop: product.ProductAnalytics.priceDrop,
+                        priceIncrease: product.ProductAnalytics.priceIncrease,
+                        percentageChange: product.ProductAnalytics.percentageChange,
+                        isBuyRecommended: product.ProductAnalytics.isBuyRecommended,
+                        isOnSale: product.ProductAnalytics.isOnSale,
+                        previousPrice: product.ProductAnalytics.previousPrice,
+                        priceChangeStatus: product.ProductAnalytics.priceChangeStatus,
+                        averagePrice: product.ProductAnalytics.averagePrice,
+                        medianPrice: product.ProductAnalytics.medianPrice,
+                        priceStdDev: product.ProductAnalytics.priceStdDev,
+                        promotionImpact: product.ProductAnalytics.promotionImpact,
+                        lastCalculated: product.ProductAnalytics.lastCalculated,
+                    } : null,
                 },
             };
         }));
-        return favoriteProducts;
+        return favoriteProducts.filter(product => product !== null);
     }
 };
 exports.FavoriteService = FavoriteService;
