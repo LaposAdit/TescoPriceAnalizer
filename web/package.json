@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@clerk/nextjs": "^5.2.2",
     "apexcharts": "^3.49.2",
     "flowbite-react": "^0.10.1",
     "next": "14.2.4",

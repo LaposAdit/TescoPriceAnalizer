@@ -2,7 +2,13 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import SidebarCompoment from './compoments/sidebar';
-
+import {
+  ClerkProvider,
+  SignInButton,
+  SignedIn,
+  SignedOut,
+  UserButton
+} from '@clerk/nextjs'
 
 
 const inter = Inter({ subsets: ["latin"] });
@@ -18,20 +24,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <div>
-          <SidebarCompoment />
-        </div>
-        <div className="p-4 sm:ml-64">
-          <div className="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
-            {children}
-
+    <ClerkProvider>
+      <html lang="en">
+        <body className={inter.className}>
+          <div>
+            <SidebarCompoment />
           </div>
-
-        </div>
-
-      </body>
-    </html>
+          <div className="p-4 sm:ml-64">
+            <div className="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
+            
+              {children}
+            </div>
+          </div>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
