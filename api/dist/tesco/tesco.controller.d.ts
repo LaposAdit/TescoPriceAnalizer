@@ -4,8 +4,9 @@ import { GenericResponse } from 'src/dto/Tesco-ResponsDTO';
 export declare class TescoController {
     private readonly service;
     constructor(service: TescoService);
-    getProductsAnalyticsFromDb(category?: string, page?: number, pageSize?: number, sale?: string, sortLastCalculated?: 'null' | 'asc' | 'desc', sortPriceChangeStatus?: 'null' | 'asc' | 'desc', sortIsBuyRecommended?: 'null' | 'asc' | 'desc', sortPercentageChange?: 'null' | 'asc' | 'desc', sortUpdatedAt?: 'null' | 'asc' | 'desc', sortAveragePrice?: 'null' | 'asc' | 'desc'): Promise<GenericResponse<any>>;
-    searchProductsByNameWithAnalytics(searchTerm: string, page?: number, pageSize?: number, sale?: string, sortLastCalculated?: 'null' | 'asc' | 'desc', sortPriceChangeStatus?: 'null' | 'asc' | 'desc', sortIsBuyRecommended?: 'null' | 'asc' | 'desc', sortPercentageChange?: 'null' | 'asc' | 'desc', sortUpdatedAt?: 'null' | 'asc' | 'desc', sortAveragePrice?: 'null' | 'asc' | 'desc'): Promise<any>;
+    getProductsAnalyticsFromDb(category?: string, page?: number, pageSize?: number, sale?: string, sortLastCalculated?: 'asc' | 'desc', sortPriceChangeStatus?: 'asc' | 'desc', sortIsBuyRecommended?: 'asc' | 'desc', sortPercentageChange?: 'asc' | 'desc', sortUpdatedAt?: 'asc' | 'desc', sortAveragePrice?: 'asc' | 'desc', priceChangeStatus?: 'decreased' | 'increased' | 'unchanged'): Promise<GenericResponse<any>>;
+    searchProductsByNameWithAnalytics(searchTerm: string, page?: number, pageSize?: number, sale?: string, category?: string, sortLastCalculated?: 'asc' | 'desc', sortPriceChangeStatus?: 'asc' | 'desc', sortIsBuyRecommended?: 'asc' | 'desc', sortPercentageChange?: 'asc' | 'desc', sortUpdatedAt?: 'asc' | 'desc', sortAveragePrice?: 'asc' | 'desc'): Promise<any>;
+    getAnalyticsByProductId(productId: string): Promise<any>;
     calculateAnalytics(category: string): Promise<{
         message: string;
     }>;

@@ -395,19 +395,15 @@ export class TescoService {
 
 
     private calculateAnalytics(products: any[]): any {
-        //console.log(`calculateAnalytics called with ${products.length} products`);
-
-        // Ensure isOnSale is determined based on hasPromotions
         const currentProduct = products[0];
         const isOnSale = currentProduct.hasPromotions;
-        //console.log(`Product ID: ${currentProduct.productId}, isOnSale: ${isOnSale}, hasPromotions: ${currentProduct.hasPromotions}`);
 
         if (products.length < 2) {
             return {
                 priceDrop: 0,
                 priceIncrease: 0,
                 percentageChange: 0,
-                isBuyRecommended: isOnSale ? 'yes' : 'neutral',  // Recommend buy if on sale
+                isBuyRecommended: isOnSale ? 'yes' : 'neutral',
                 isOnSale: isOnSale,
                 previousPrice: null,
                 priceChangeStatus: 'unknown',
@@ -418,19 +414,31 @@ export class TescoService {
             };
         }
 
-        const getCurrentPrice = (product: any): number => {
+        const getEffectivePrice = (product: any): number => {
             if (product.promotions && product.promotions.length > 0 && product.promotions[0].promotionPrice != null) {
                 return product.promotions[0].promotionPrice;
             }
             return product.price;
         };
 
-        const currentPrice = getCurrentPrice(currentProduct);
-        const previousPrice = getCurrentPrice(products[1]);
-        const priceDifference = previousPrice - currentPrice;
-        const percentageChange = (priceDifference / previousPrice) * 100;
+        const currentBasePrice = currentProduct.price;
+        const currentEffectivePrice = getEffectivePrice(currentProduct);
+        const previousEffectivePrice = getEffectivePrice(products[1]);
 
-        const validPrices = products.slice(0, 5).map(getCurrentPrice);
+        let priceDifference: number;
+        let percentageChange: number;
+
+        if (isOnSale) {
+            // If on sale, calculate difference from base price to sale price
+            priceDifference = currentBasePrice - currentEffectivePrice;
+            percentageChange = (priceDifference / currentBasePrice) * 100;
+        } else {
+            // If not on sale, calculate difference from previous price to current price
+            priceDifference = previousEffectivePrice - currentEffectivePrice;
+            percentageChange = (priceDifference / previousEffectivePrice) * 100;
+        }
+
+        const validPrices = products.slice(0, 5).map(getEffectivePrice);
         const averagePrice = validPrices.length > 0
             ? parseFloat((validPrices.reduce((sum, price) => sum + price, 0) / validPrices.length).toFixed(2))
             : null;
@@ -444,32 +452,30 @@ export class TescoService {
             : null;
 
         let priceChangeStatus: 'decreased' | 'increased' | 'unchanged' = 'unchanged';
-        if (currentPrice < previousPrice) {
+        if (priceDifference > 0) {
             priceChangeStatus = 'decreased';
-        } else if (currentPrice > previousPrice) {
+        } else if (priceDifference < 0) {
             priceChangeStatus = 'increased';
         }
 
         let isBuyRecommended: 'yes' | 'no' | 'neutral' = 'neutral';
-        if (currentPrice < previousPrice || (averagePrice !== null && currentPrice < averagePrice)) {
+        if (priceDifference > 0 || (averagePrice !== null && currentEffectivePrice < averagePrice)) {
             isBuyRecommended = 'yes';
-        } else if (currentPrice > previousPrice) {
+        } else if (priceDifference < 0) {
             isBuyRecommended = 'no';
         } else if (isOnSale) {
             isBuyRecommended = 'yes';
         }
 
-        const promotionImpact = isOnSale && previousPrice !== null
-            ? parseFloat((previousPrice - currentPrice).toFixed(2))
-            : null;
+        const promotionImpact = isOnSale ? parseFloat(priceDifference.toFixed(2)) : null;
 
         return {
-            priceDrop: currentPrice < previousPrice ? parseFloat(priceDifference.toFixed(2)) : 0,
-            priceIncrease: currentPrice > previousPrice ? parseFloat(Math.abs(priceDifference).toFixed(2)) : 0,
+            priceDrop: priceDifference > 0 ? parseFloat(priceDifference.toFixed(2)) : 0,
+            priceIncrease: priceDifference < 0 ? parseFloat(Math.abs(priceDifference).toFixed(2)) : 0,
             percentageChange: parseFloat(percentageChange.toFixed(2)),
             isBuyRecommended,
             isOnSale,
-            previousPrice: parseFloat(previousPrice.toFixed(2)),
+            previousPrice: parseFloat(previousEffectivePrice.toFixed(2)),
             priceChangeStatus,
             averagePrice,
             medianPrice,
@@ -478,13 +484,23 @@ export class TescoService {
         };
     }
 
+    private calculateSalePriceDifference(product: any): number | null {
+        if (product.promotions && product.promotions.length > 0 && product.promotions[0].promotionPrice != null) {
+            const basePrice = product.price;
+            const salePrice = product.promotions[0].promotionPrice;
+            return parseFloat((basePrice - salePrice).toFixed(2));
+        }
+        return null;
+    }
+
     async getProductsAnalytics(
         category: string,
         page: number,
         pageSize: number,
         sale?: boolean,
         randomize?: boolean,
-        sortFields?: { field: string; order: 'asc' | 'desc' }[]
+        sortFields?: { field: string; order: 'asc' | 'desc' }[],
+        priceChangeStatus?: 'decreased' | 'increased' | 'unchanged'
     ): Promise<any> {
         const skip = (page - 1) * pageSize;
         const take = Number(pageSize);
@@ -498,9 +514,9 @@ export class TescoService {
         const fetchProductAnalytics = async (category: string) => {
             const model = this.getPrismaModel(category);
 
-            let whereClause = {};
+            let whereClause: any = {};
             if (sale !== undefined) {
-                whereClause = { hasPromotions: sale };
+                whereClause.hasPromotions = sale;
             }
 
             const latestProducts = await model.findMany({
@@ -511,18 +527,24 @@ export class TescoService {
 
             const productIds = latestProducts.map(product => product.productId);
 
+            let analyticsWhereClause: any = { productId: { in: productIds } };
+            if (priceChangeStatus) {
+                analyticsWhereClause.priceChangeStatus = priceChangeStatus;
+            }
+
             const analytics = await this.prisma.productAnalytics.findMany({
-                where: {
-                    productId: { in: productIds }
-                },
+                where: analyticsWhereClause,
             });
 
             const productMap = new Map();
             latestProducts.forEach(product => {
-                productMap.set(product.productId, {
-                    ...this.transformProduct({ ...product, category }),
-                    analytics: analytics.find(a => a.productId === product.productId)
-                });
+                const productAnalytics = analytics.find(a => a.productId === product.productId);
+                if (productAnalytics) {  // Only include products that match the priceChangeStatus filter
+                    productMap.set(product.productId, {
+                        ...this.transformProduct({ ...product, category }),
+                        analytics: productAnalytics
+                    });
+                }
             });
 
             let products = Array.from(productMap.values());
@@ -633,22 +655,33 @@ export class TescoService {
             models = allCategories.map(cat => ({ model: this.getPrismaModel(cat), category: cat }));
         }
 
-        const searchPromises = models.map(({ model, category }) => this.searchModelForTermWithAnalytics(model, searchTerm, sale, category));
+        const searchPromises = models.map(({ model, category }) =>
+            this.searchModelForTermWithAnalytics(model, searchTerm, sale, category)
+        );
 
         const searchResults = await Promise.all(searchPromises);
-        const productsFromDb = searchResults.flat();
 
-        const latestProductsMap = new Map();
-        productsFromDb.forEach(product => {
-            if (!latestProductsMap.has(product.productId) || latestProductsMap.get(product.productId).lastUpdated < product.lastUpdated) {
-                latestProductsMap.set(product.productId, product);
-            }
+        let allProducts = [];
+        let totalProducts = 0;
+
+        // Use a Map to keep only the latest version of each product
+        const productMap = new Map();
+
+        searchResults.forEach(result => {
+            result.products.forEach(product => {
+                const existingProduct = productMap.get(product.productId);
+                if (!existingProduct || existingProduct.lastUpdated < product.lastUpdated) {
+                    productMap.set(product.productId, product);
+                }
+            });
+            totalProducts += result.totalCount;
         });
 
-        const latestProducts = Array.from(latestProductsMap.values());
+        allProducts = Array.from(productMap.values());
 
+        // Apply sorting if sortFields are provided
         if (sortFields && sortFields.length > 0) {
-            latestProducts.sort((a, b) => {
+            allProducts.sort((a, b) => {
                 for (const { field, order } of sortFields) {
                     const aValue = a.analytics ? a.analytics[field] : 0;
                     const bValue = b.analytics ? b.analytics[field] : 0;
@@ -664,11 +697,12 @@ export class TescoService {
             });
         }
 
-        const totalProducts = latestProducts.length;
+        totalProducts = allProducts.length; // Update total count to reflect unique products
         const totalPages = Math.ceil(totalProducts / pageSize);
-        const skip = (page - 1) * pageSize;
 
-        const paginatedProducts = latestProducts.slice(skip, skip + pageSize);
+        // Apply pagination
+        const startIndex = (page - 1) * pageSize;
+        const paginatedProducts = allProducts.slice(startIndex, startIndex + pageSize);
 
         return {
             totalPages,
@@ -678,9 +712,12 @@ export class TescoService {
         };
     }
 
-
-
-    private async searchModelForTermWithAnalytics(model: any, searchTerm: string, sale?: boolean, category?: string) {
+    private async searchModelForTermWithAnalytics(
+        model: any,
+        searchTerm: string,
+        sale?: boolean,
+        category?: string
+    ) {
         const where: Record<string, any> = {
             title: {
                 contains: searchTerm,
@@ -691,30 +728,38 @@ export class TescoService {
             where['hasPromotions'] = sale;
         }
 
+        const totalCount = await model.count({ where });
+
         const results = await model.findMany({
             where,
             include: { promotions: true },
-            orderBy: { lastUpdated: 'desc' }
+            orderBy: { lastUpdated: 'desc' },
         });
 
-        const productsWithAnalytics = await Promise.all(results.map(async (product: any) => {
-            const productHistory = await model.findMany({
-                where: { productId: product.productId },
-                include: { promotions: true },
-                orderBy: { lastUpdated: 'desc' },
-            });
+        const productIds = results.map((product: any) => product.productId);
 
-            const analytics = this.calculateAnalytics(productHistory);
+        const analyticsData = await this.prisma.productAnalytics.findMany({
+            where: { productId: { in: productIds } }
+        });
+
+        const productsWithAnalytics = results.map((product: any) => {
+            const analytics = analyticsData.find(a => a.productId === product.productId) || this.calculateAnalytics([product]);
             return this.transformProductWithAnalytics({ ...product, category }, analytics);
-        }));
+        });
 
-        return productsWithAnalytics;
+        return { products: productsWithAnalytics, totalCount };
     }
 
 
+    async getAnalyticsByProductId(productId: string): Promise<any> {
+        const analytics = await this.prisma.productAnalytics.findUnique({
+            where: { productId: productId }
+        });
 
+        if (!analytics) {
+            throw new NotFoundException(`Analytics for product with ID ${productId} not found`);
+        }
+
+        return analytics;
+    }
 }
-
-
-
-

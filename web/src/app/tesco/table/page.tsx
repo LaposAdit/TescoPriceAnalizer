@@ -11,6 +11,7 @@ interface Analytics {
     previousPrice: number | null;
     priceChangeStatus: 'decreased' | 'increased' | 'unchanged' | 'unknown';
     averagePrice: number | null;
+    lastCalculated: string;
 }
 
 interface Promotion {
@@ -87,6 +88,7 @@ export default function ProductPage() {
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [tableSettingsVisible, setTableSettingsVisible] = useState<boolean>(false);
     const [selectedColumns, setSelectedColumns] = useState<string[]>(columns.map(col => col.key));
+    const [priceChangeStatus, setPriceChangeStatus] = useState<string>('');
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -101,6 +103,7 @@ export default function ProductPage() {
                         searchTerm: searchTerm || undefined,
                         category: category || undefined,
                         sale,
+                        priceChangeStatus: priceChangeStatus || undefined,
                         pageSize,
                         page,
                     },
@@ -131,7 +134,7 @@ export default function ProductPage() {
         }, 500);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [category, sale, pageSize, page, searchTerm]);
+    }, [category, sale, priceChangeStatus, pageSize, page, searchTerm]);
 
     const handlePageChange = (newPage: number) => {
         setPage(newPage);
@@ -144,6 +147,11 @@ export default function ProductPage() {
 
     const handleSaleChange = (newSale: boolean | null) => {
         setSale(newSale);
+        setPage(1);
+    };
+
+    const handlePriceChangeStatusChange = (newStatus: string) => {
+        setPriceChangeStatus(newStatus);
         setPage(1);
     };
 
@@ -192,13 +200,13 @@ export default function ProductPage() {
         else if (product.analytics.isBuyRecommended === 'yes' && product.analytics.priceChangeStatus === 'decreased') {
             return 'good';
         }
-        else if ( product.analytics.isOnSale === true && product.analytics.isBuyRecommended === 'yes' && product.analytics.priceChangeStatus === 'decreased') {
+        else if (product.analytics.isOnSale === true && product.analytics.isBuyRecommended === 'yes' && product.analytics.priceChangeStatus === 'decreased') {
             return 'price drop';
         }
-        else if ( product.analytics.isOnSale === true && product.analytics.isBuyRecommended === 'yes' && product.analytics.priceChangeStatus === 'unchanged') {
+        else if (product.analytics.isOnSale === true && product.analytics.isBuyRecommended === 'yes' && product.analytics.priceChangeStatus === 'unchanged') {
             return 'sale';
         }
-        else if ( product.analytics.isOnSale === true && product.analytics.isBuyRecommended === 'yes' && product.analytics.priceChangeStatus === 'unknown') {
+        else if (product.analytics.isOnSale === true && product.analytics.isBuyRecommended === 'yes' && product.analytics.priceChangeStatus === 'unknown') {
             return 'sale';
         }
         else if (product.analytics.isBuyRecommended === 'yes' && product.analytics.priceChangeStatus === 'unchanged') {
@@ -335,6 +343,16 @@ export default function ProductPage() {
                                 <option value="false">Not Sale</option>
                             </select>
                             <select
+                                value={priceChangeStatus}
+                                onChange={(e) => handlePriceChangeStatusChange(e.target.value)}
+                                className="border p-2 rounded-md bg-white"
+                            >
+                                <option value="">All Statuses</option>
+                                <option value="decreased">Decreased</option>
+                                <option value="increased">Increased</option>
+                                <option value="unchanged">Unchanged</option>
+                            </select>
+                            <select
                                 value={pageSize}
                                 onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                                 className="border p-2 rounded-md bg-white"
@@ -364,11 +382,11 @@ export default function ProductPage() {
                             <tbody>
                                 {loading ? (
                                     <tr>
-                                        <td colSpan={9} className="text-center p-4">Loading...</td>
+                                        <td colSpan={10} className="text-center p-4">Loading...</td>
                                     </tr>
                                 ) : error ? (
                                     <tr>
-                                        <td colSpan={9} className="text-center p-4 text-red-500">{error}</td>
+                                        <td colSpan={10} className="text-center p-4 text-red-500">{error}</td>
                                     </tr>
                                 ) : products.length > 0 ? (
                                     products.map((product) => {
@@ -381,11 +399,11 @@ export default function ProductPage() {
                                             <tr key={product.productId} className="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
                                                 {selectedColumns.includes('indicator') && <td className={`p-4 font-semibold ${indicatorClass}`}>{indicatorText}</td>}
                                                 {selectedColumns.includes('product') && <td className="p-4">{product.title}</td>}
-                                                {selectedColumns.includes('category') && <td className="p-4">{product.category}</td>}
+                                                {selectedColumns.includes('category') && <td className="p-4">{categoryMap[product.category] || product.category}</td>}
                                                 {selectedColumns.includes('price') && <td className="p-4">€{product.price?.toFixed(2) ?? 'N/A'}</td>}
                                                 {selectedColumns.includes('unitPrice') && <td className="p-4">€{product.unitPrice?.toFixed(2) ?? 'N/A'} per {product.unitOfMeasure}</td>}
                                                 {selectedColumns.includes('promotionPrice') && <td className="p-4">{product.promotions.length > 0 && product.promotions[0].promotionPrice !== null ? `€${product.promotions[0].promotionPrice?.toFixed(2) ?? 'N/A'}` : 'N/A'}</td>}
-                                                {selectedColumns.includes('lastUpdated') && <td className="p-4">{product.lastUpdated ? new Date(product.lastUpdated).toLocaleDateString() : 'N/A'}</td>}
+                                                {selectedColumns.includes('lastUpdated') && <td className="p-4">{product.analytics.lastCalculated ? new Date(product.analytics.lastCalculated).toLocaleDateString() : 'N/A'}</td>}
                                                 {selectedColumns.includes('priceChange') && <td className={`p-4 ${priceChangeClass}`}>{priceChangeSign}€{Math.abs(priceChange).toFixed(2)}</td>}
                                                 {selectedColumns.includes('percentageChange') && <td className={`p-4 ${priceChangeClass}`}>{priceChangeSign}{Math.abs(product.analytics.percentageChange).toFixed(2)}%</td>}
                                                 {selectedColumns.includes('averagePrice') && <td className="p-4">€{product.analytics.averagePrice?.toFixed(2) ?? 'N/A'}</td>}
@@ -394,7 +412,7 @@ export default function ProductPage() {
                                     })
                                 ) : (
                                     <tr>
-                                        <td colSpan={9} className="text-center p-4">No products found</td>
+                                        <td colSpan={10} className="text-center p-4">No products found</td>
                                     </tr>
                                 )}
                             </tbody>

@@ -10,13 +10,15 @@ export declare class TescoService {
     searchProductsByName(searchTerm: string, page: number, pageSize: number, sale?: boolean, category?: string): Promise<any>;
     calculateAndStoreAnalytics(category: string): Promise<void>;
     private calculateAnalytics;
+    private calculateSalePriceDifference;
     getProductsAnalytics(category: string, page: number, pageSize: number, sale?: boolean, randomize?: boolean, sortFields?: {
         field: string;
         order: 'asc' | 'desc';
-    }[]): Promise<any>;
+    }[], priceChangeStatus?: 'decreased' | 'increased' | 'unchanged'): Promise<any>;
     searchProductsByNameWithAnalytics(searchTerm: string, page: number, pageSize: number, sale?: boolean, category?: string, sortFields?: {
         field: string;
         order: 'asc' | 'desc';
     }[]): Promise<any>;
     private searchModelForTermWithAnalytics;
+    getAnalyticsByProductId(productId: string): Promise<any>;
 }

@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import axios from 'axios';
-import { GlobalAPI_IP } from "../../compoments/global";
 import ProductPriceChart from "../utils/ProductPriceChart";
 import HistoryTable from "../utils/HistoryTable";
 
@@ -30,6 +29,25 @@ interface ProductDetail {
     lastUpdated: string;
 }
 
+interface AnalyticsData {
+    id: number;
+    productId: string;
+    priceDrop: number;
+    priceIncrease: number;
+    percentageChange: number;
+    isBuyRecommended: string;
+    isOnSale: boolean;
+    previousPrice: number;
+    priceChangeStatus: string;
+    averagePrice: number;
+    medianPrice: number;
+    priceStdDev: number;
+    promotionImpact: number | null;
+    lastCalculated: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
 interface PageProps {
     params: {
         productId: string;
@@ -44,9 +62,7 @@ export default function Page({ params, searchParams }: PageProps) {
     const [history, setHistory] = useState<ProductDetail[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    const [priceDrop, setPriceDrop] = useState<number | null>(null);
-    const [percentageDrop, setPercentageDrop] = useState<number | null>(null);
-    const [priceStatus, setPriceStatus] = useState<'increase' | 'decrease' | null>(null);
+    const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
 
     useEffect(() => {
         const fetchProductDetail = async () => {
@@ -55,40 +71,32 @@ export default function Page({ params, searchParams }: PageProps) {
             console.log('Fetching product details for:', params.productId, 'with category:', searchParams.category);
 
             try {
-                const response = await axios.get<ProductDetail[]>(`http://localhost:3000/products/${searchParams.category}/${params.productId}`, {
+                const productResponse = await axios.get<ProductDetail[]>(`http://localhost:3000/products/${searchParams.category}/${params.productId}`, {
                     headers: {
                         accept: 'application/json',
                     },
                 });
-                console.log('Product details fetched:', response.data);
-                if (response.data.length > 0) {
-                    const sortedData = response.data.sort((a, b) => new Date(a.lastUpdated).getTime() - new Date(b.lastUpdated).getTime());
+                console.log('Product details fetched:', productResponse.data);
+                if (productResponse.data.length > 0) {
+                    const sortedData = productResponse.data.sort((a, b) => new Date(a.lastUpdated).getTime() - new Date(b.lastUpdated).getTime());
                     setProduct(sortedData[sortedData.length - 1]);
                     setHistory(sortedData);
 
-                    const initialPrice = sortedData[0].promotions.length > 0 && sortedData[0].promotions[0].promotionPrice !== null
-                        ? sortedData[0].promotions[0].promotionPrice
-                        : sortedData[0].price;
-
-                    const latestPrice = sortedData[sortedData.length - 1].promotions.length > 0 && sortedData[sortedData.length - 1].promotions[0].promotionPrice !== null
-                        ? sortedData[sortedData.length - 1].promotions[0].promotionPrice
-                        : sortedData[sortedData.length - 1].price;
-
-                    if (initialPrice !== null && latestPrice !== null) {
-                        const priceDifference = initialPrice - latestPrice;
-                        const percentageDifference = (priceDifference / initialPrice) * 100;
-
-                        setPriceDrop(priceDifference);
-                        setPercentageDrop(percentageDifference);
-                        setPriceStatus(priceDifference > 0 ? 'decrease' : 'increase');
-                    }
+                    const analyticsResponse = await axios.get<AnalyticsData>(`http://localhost:3000/products/analytics/${params.productId}`, {
+                        headers: {
+                            accept: 'application/json',
+                        },
+                    });
+                    console.log('Analytics data fetched:', analyticsResponse.data);
+                    setAnalytics(analyticsResponse.data);
                 } else {
                     setProduct(null);
+                    setAnalytics(null);
                 }
                 setLoading(false);
             } catch (err) {
-                console.error('Error fetching product details:', err);
-                setError('Failed to fetch product details');
+                console.error('Error fetching product details or analytics:', err);
+                setError('Failed to fetch product details or analytics');
                 setLoading(false);
             }
         };
@@ -125,39 +133,76 @@ export default function Page({ params, searchParams }: PageProps) {
             ) : error ? (
                 <p className="text-red-500 text-center">{error}</p>
             ) : product ? (
-                <div className="grid gap-8 grid-cols-1 xl:grid-cols-3">
-                    <div className="col-span-1 bg-white rounded-lg shadow-lg p-6">
-                        <img className="w-full h-60 object-contain rounded-md mb-6" src={product.imageUrl} alt={product.title} />
-                        <h1 className="text-3xl font-bold text-gray-800 mb-4">{product.title}</h1>
-                        <div className="space-y-2">
-                            <p className="text-xl text-gray-700">Price: <span className="font-semibold text-blue-600">€{product.price?.toFixed(2) ?? 'N/A'}</span></p>
-                            <p className="text-md text-gray-600">Unit Price: €{product.unitPrice?.toFixed(2) ?? 'N/A'} per {product.unitOfMeasure ?? ''}</p>
-                            <p className="text-md text-gray-600">Aisle: {product.aisleName ?? 'N/A'}</p>
-                            <p className="text-md text-gray-600">Department: {product.superDepartmentName ?? 'N/A'}</p>
-                            <p className="text-md text-gray-600">Sale: {product.hasPromotions ? 'Yes' : 'No'}</p>
-                            {product.hasPromotions && product.promotions.length > 0 && (
-                                <p className="text-md text-green-600 font-semibold">Promotion Price: €{product.promotions[0].promotionPrice?.toFixed(2) ?? 'N/A'} - {product.promotions[0].offerText}</p>
-                            )}
-                            <p className="text-sm text-gray-500">Last Updated: {product.lastUpdated ? new Date(product.lastUpdated).toLocaleDateString() : 'N/A'}</p>
-                        </div>
-                        {priceDrop !== null && percentageDrop !== null && (
-                            <div className="mt-6 p-4">
-                                <h2 className="text-2xl font-bold text-gray-800 mb-4">Price Analysis</h2>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className={`p-4 rounded-lg ${priceStatus === 'decrease' ? 'text-green-600' : 'text-red-600'}`}>
-                                        <p className="text-xl font-semibold text-gray-700">Price {priceStatus === 'decrease' ? 'Drop' : 'Increase'}</p>
-                                        <p className="text-2xl font-bold">€{Math.abs(priceDrop).toFixed(2)}</p>
-                                    </div>
-                                    <div className={`p-4 rounded-lg ${priceStatus === 'decrease' ? 'text-green-600' : 'text-red-600'}`}>
-                                        <p className="text-xl font-semibold text-gray-700">Percentage {priceStatus === 'decrease' ? 'Drop' : 'Increase'}</p>
-                                        <p className="text-2xl font-bold">{Math.abs(percentageDrop).toFixed(2)}%</p>
-                                    </div>
+                <div className="flex flex-col xl:flex-row gap-8">
+                    <div className="w-full xl:w-1/3">
+                        
+                        <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-4">
+                            <img className="w-40 h-40 object-contain rounded-md" src={product.imageUrl} alt={product.title} />
+                            <div className="flex flex-col space-y-1">
+                                <h1 className="text-xl font-bold text-gray-800">{product.title}</h1>
+                                <p className="text-lg text-gray-700">Price: <span className="font-semibold text-blue-600">€{product.price?.toFixed(2) ?? 'N/A'}</span></p>
+                                <p className="text-sm text-gray-600">Unit Price: €{product.unitPrice?.toFixed(2) ?? 'N/A'} per {product.unitOfMeasure ?? ''}</p>
+                                <div className="flex items-center space-x-2">
+                                    <span className="inline-block px-2 py-1 text-xs font-semibold text-white bg-blue-500 rounded-full">Sale: {product.hasPromotions ? 'Yes' : 'No'}</span>
                                 </div>
                             </div>
-                        )}
+                        </div>
+
+
+                        <div className="bg-white rounded-lg shadow-lg p-6 mt-6">
+                            {analytics && (
+                                <div className="">
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Price Analysis</h2>
+                                    <div className="p-4 bg-blue-100 rounded-lg flex flex-col items-center mb-4">
+                                        <p className="text-xl font-semibold text-gray-700">Actual Price</p>
+                                        <p className="text-2xl font-bold text-blue-600">€{(product.promotions.length > 0 && product.promotions[0].promotionPrice !== null ? product.promotions[0].promotionPrice : product.price).toFixed(2)}</p>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4 mb-4">
+                                        <div className={`p-4 rounded-lg ${analytics.priceChangeStatus === 'decreased' ? 'bg-green-100' : 'bg-red-100'} flex flex-col items-center`}>
+                                            <p className="text-xl font-semibold text-gray-700">Price {analytics.priceChangeStatus === 'decreased' ? 'Drop' : 'Increase'}</p>
+                                            <p className="text-2xl font-bold">{analytics.priceChangeStatus === 'decreased' ? '-' : '+'}€{(analytics.priceChangeStatus === 'decreased' ? analytics.priceDrop : analytics.priceIncrease).toFixed(2)}</p>
+                                        </div>
+                                        <div className={`p-4 rounded-lg ${analytics.priceChangeStatus === 'decreased' ? 'bg-green-100' : 'bg-red-100'} flex flex-col items-center`}>
+                                            <p className="text-xl font-semibold text-gray-700">Percentage {analytics.priceChangeStatus === 'decreased' ? 'Drop' : 'Increase'}</p>
+                                            <p className="text-2xl font-bold">{analytics.priceChangeStatus === 'decreased' ? '-' : '+'}{Math.abs(analytics.percentageChange).toFixed(2)}%</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <div className="bg-white p-4 rounded-lg shadow flex flex-col items-center">
+                                            <p className="text-md font-semibold text-gray-700">Is Buy Recommended</p>
+                                            <p className="text-lg font-bold text-blue-600">{analytics.isBuyRecommended === 'yes' ? 'Yes' : 'No'}</p>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-lg shadow flex flex-col items-center">
+                                            <p className="text-md font-semibold text-gray-700">Average Price</p>
+                                            <p className="text-lg font-bold text-yellow-600">€{analytics.averagePrice?.toFixed(2) ?? 'N/A'}</p>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-lg shadow flex flex-col items-center">
+                                            <p className="text-md font-semibold text-gray-700">Median Price</p>
+                                            <p className="text-lg font-bold text-yellow-600">€{analytics.medianPrice?.toFixed(2) ?? 'N/A'}</p>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-lg shadow flex flex-col items-center">
+                                            <p className="text-md font-semibold text-gray-700">Price Standard Deviation</p>
+                                            <p className="text-lg font-bold text-yellow-600">€{analytics.priceStdDev?.toFixed(2) ?? 'N/A'}</p>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-lg shadow flex flex-col items-center">
+                                            <p className="text-md font-semibold text-gray-700">Promotion Impact</p>
+                                            <p className="text-lg font-bold text-green-600">€{analytics.promotionImpact?.toFixed(2) ?? 'N/A'}</p>
+                                        </div>
+                                        <div className={`bg-white p-4 rounded-lg shadow flex flex-col items-center ${analytics.priceChangeStatus === 'decreased' ? 'text-green-600' : 'text-red-600'}`}>
+                                            <p className="text-md font-semibold text-gray-700">Price Change Status</p>
+                                            <p className="text-lg font-bold">{analytics.priceChangeStatus === 'decreased' ? 'Decreased' : 'Increased'}</p>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-lg shadow flex flex-col items-center">
+                                            <p className="text-md font-semibold text-gray-700">Last Calculated</p>
+                                            <p className="text-sm text-gray-500">{new Date(analytics.lastCalculated).toLocaleDateString()}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
-                    <div className="col-span-2 space-y-6">
+                    <div className="flex-1 space-y-6">
                         <div className="bg-white rounded-lg shadow-lg p-6">
                             <h2 className="text-2xl font-bold text-gray-800 mb-4">Price History</h2>
                             <HistoryTable history={history} />

@@ -63,8 +63,20 @@ export class SpecialnaAZdravaVyzivaService {
     }
 
     private extractPromotionPrice(offerText: string): number | null {
-        const match = offerText.match(/S Clubcard ([0-9,.]+) €/);
-        return match ? parseFloat(match[1].replace(',', '.')) : null;
+        // First, try to match "S Clubcard X.XX €" format
+        let match = offerText.match(/S Clubcard ([0-9,.]+) €/);
+        if (match) {
+            return parseFloat(match[1].replace(',', '.'));
+        }
+
+        // If not found, try to match "teraz X.XX €" format
+        match = offerText.match(/teraz ([0-9,.]+) €/);
+        if (match) {
+            return parseFloat(match[1].replace(',', '.'));
+        }
+
+        // If no match found, return null
+        return null;
     }
 
     private transformData(data: any): SpecialnaAZdravaVyzivaTransformedProductDto[] {

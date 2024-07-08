@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Query, Param, Body } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { ProductCategory } from 'src/enum/product-category.enum';
 import { TescoService } from './tesco.service';
 import { GenericResponse } from 'src/dto/Tesco-ResponsDTO';
@@ -12,6 +12,9 @@ export class TescoController {
 
 
     @Get('analytics')
+
+
+    @ApiOperation({ summary: 'Get products with analytics' })
     @ApiQuery({
         name: 'category',
         required: false,
@@ -21,24 +24,31 @@ export class TescoController {
     @ApiQuery({ name: 'page', required: false, description: 'Page number', type: Number })
     @ApiQuery({ name: 'pageSize', required: false, description: 'Number of items per page', type: Number })
     @ApiQuery({ name: 'sale', required: false, description: 'Filter by sale', type: Boolean })
-    @ApiQuery({ name: 'sortLastCalculated', required: false, enum: ['null', 'asc', 'desc'], description: 'Sort by lastCalculated' })
-    @ApiQuery({ name: 'sortPriceChangeStatus', required: false, enum: ['null', 'asc', 'desc'], description: 'Sort by priceChangeStatus' })
-    @ApiQuery({ name: 'sortIsBuyRecommended', required: false, enum: ['null', 'asc', 'desc'], description: 'Sort by isBuyRecommended' })
-    @ApiQuery({ name: 'sortPercentageChange', required: false, enum: ['null', 'asc', 'desc'], description: 'Sort by percentageChange' })
-    @ApiQuery({ name: 'sortUpdatedAt', required: false, enum: ['null', 'asc', 'desc'], description: 'Sort by updatedAt' })
-    @ApiQuery({ name: 'sortAveragePrice', required: false, enum: ['null', 'asc', 'desc'], description: 'Sort by averagePrice' })
+    @ApiQuery({ name: 'sortLastCalculated', required: false, enum: ['asc', 'desc'], description: 'Sort by lastCalculated' })
+    @ApiQuery({ name: 'sortPriceChangeStatus', required: false, enum: ['asc', 'desc'], description: 'Sort by priceChangeStatus' })
+    @ApiQuery({ name: 'sortIsBuyRecommended', required: false, enum: ['asc', 'desc'], description: 'Sort by isBuyRecommended' })
+    @ApiQuery({ name: 'sortPercentageChange', required: false, enum: ['asc', 'desc'], description: 'Sort by percentageChange' })
+    @ApiQuery({ name: 'sortUpdatedAt', required: false, enum: ['asc', 'desc'], description: 'Sort by updatedAt' })
+    @ApiQuery({ name: 'sortAveragePrice', required: false, enum: ['asc', 'desc'], description: 'Sort by averagePrice' })
+    @ApiQuery({
+        name: 'priceChangeStatus',
+        required: false,
+        enum: ['decreased', 'increased', 'unchanged'],
+        description: 'Filter by price change status'
+    })
     @ApiResponse({ status: 200, description: 'The products with analytics have been successfully fetched from the database.', type: Object })
     async getProductsAnalyticsFromDb(
         @Query('category') category: string = 'all',
         @Query('page') page = 1,
         @Query('pageSize') pageSize = 25,
         @Query('sale') sale?: string,
-        @Query('sortLastCalculated') sortLastCalculated?: 'null' | 'asc' | 'desc',
-        @Query('sortPriceChangeStatus') sortPriceChangeStatus?: 'null' | 'asc' | 'desc',
-        @Query('sortIsBuyRecommended') sortIsBuyRecommended?: 'null' | 'asc' | 'desc',
-        @Query('sortPercentageChange') sortPercentageChange?: 'null' | 'asc' | 'desc',
-        @Query('sortUpdatedAt') sortUpdatedAt?: 'null' | 'asc' | 'desc',
-        @Query('sortAveragePrice') sortAveragePrice?: 'null' | 'asc' | 'desc'
+        @Query('sortLastCalculated') sortLastCalculated?: 'asc' | 'desc',
+        @Query('sortPriceChangeStatus') sortPriceChangeStatus?: 'asc' | 'desc',
+        @Query('sortIsBuyRecommended') sortIsBuyRecommended?: 'asc' | 'desc',
+        @Query('sortPercentageChange') sortPercentageChange?: 'asc' | 'desc',
+        @Query('sortUpdatedAt') sortUpdatedAt?: 'asc' | 'desc',
+        @Query('sortAveragePrice') sortAveragePrice?: 'asc' | 'desc',
+        @Query('priceChangeStatus') priceChangeStatus?: 'decreased' | 'increased' | 'unchanged'
     ): Promise<GenericResponse<any>> {
         const saleBoolean = sale === 'true' ? true : sale === 'false' ? false : undefined;
 
@@ -50,24 +60,28 @@ export class TescoController {
             { field: 'updatedAt', order: sortUpdatedAt },
             { field: 'averagePrice', order: sortAveragePrice },
         ]
-            .filter(item => item.order !== 'null' && item.order !== undefined)
-            .map(item => ({ field: item.field, order: item.order as 'asc' | 'desc' }));  // Type assertion to ensure correct type
+            .filter(item => item.order !== undefined)
+            .map(item => ({ field: item.field, order: item.order as 'asc' | 'desc' }));
 
-        return this.service.getProductsAnalytics(category, page, pageSize, saleBoolean, false, sortFields);
+        return this.service.getProductsAnalytics(category, page, pageSize, saleBoolean, false, sortFields, priceChangeStatus);
     }
-
-
     @ApiOperation({ summary: 'Search products by name with analytics' })
     @ApiQuery({ name: 'searchTerm', required: true, description: 'Search term for product title' })
     @ApiQuery({ name: 'page', required: false, description: 'Page number', type: Number, example: 1 })
     @ApiQuery({ name: 'pageSize', required: false, description: 'Number of items per page', type: Number, example: 25 })
     @ApiQuery({ name: 'sale', required: false, description: 'Filter by sale', type: Boolean })
-    @ApiQuery({ name: 'sortLastCalculated', required: false, enum: ['null', 'asc', 'desc'], description: 'Sort by lastCalculated' })
-    @ApiQuery({ name: 'sortPriceChangeStatus', required: false, enum: ['null', 'asc', 'desc'], description: 'Sort by priceChangeStatus' })
-    @ApiQuery({ name: 'sortIsBuyRecommended', required: false, enum: ['null', 'asc', 'desc'], description: 'Sort by isBuyRecommended' })
-    @ApiQuery({ name: 'sortPercentageChange', required: false, enum: ['null', 'asc', 'desc'], description: 'Sort by percentageChange' })
-    @ApiQuery({ name: 'sortUpdatedAt', required: false, enum: ['null', 'asc', 'desc'], description: 'Sort by updatedAt' })
-    @ApiQuery({ name: 'sortAveragePrice', required: false, enum: ['null', 'asc', 'desc'], description: 'Sort by averagePrice' })
+    @ApiQuery({
+        name: 'category',
+        required: false,
+        enum: Object.values(ProductCategory),
+        description: 'Product category'
+    })
+    @ApiQuery({ name: 'sortLastCalculated', required: false, enum: ['asc', 'desc'], description: 'Sort by lastCalculated' })
+    @ApiQuery({ name: 'sortPriceChangeStatus', required: false, enum: ['asc', 'desc'], description: 'Sort by priceChangeStatus' })
+    @ApiQuery({ name: 'sortIsBuyRecommended', required: false, enum: ['asc', 'desc'], description: 'Sort by isBuyRecommended' })
+    @ApiQuery({ name: 'sortPercentageChange', required: false, enum: ['asc', 'desc'], description: 'Sort by percentageChange' })
+    @ApiQuery({ name: 'sortUpdatedAt', required: false, enum: ['asc', 'desc'], description: 'Sort by updatedAt' })
+    @ApiQuery({ name: 'sortAveragePrice', required: false, enum: ['asc', 'desc'], description: 'Sort by averagePrice' })
     @ApiResponse({ status: 200, description: 'List of products matching the search term with analytics' })
     @Get('search/analytics')
     async searchProductsByNameWithAnalytics(
@@ -75,12 +89,13 @@ export class TescoController {
         @Query('page') page = 1,
         @Query('pageSize') pageSize = 25,
         @Query('sale') sale?: string,
-        @Query('sortLastCalculated') sortLastCalculated?: 'null' | 'asc' | 'desc',
-        @Query('sortPriceChangeStatus') sortPriceChangeStatus?: 'null' | 'asc' | 'desc',
-        @Query('sortIsBuyRecommended') sortIsBuyRecommended?: 'null' | 'asc' | 'desc',
-        @Query('sortPercentageChange') sortPercentageChange?: 'null' | 'asc' | 'desc',
-        @Query('sortUpdatedAt') sortUpdatedAt?: 'null' | 'asc' | 'desc',
-        @Query('sortAveragePrice') sortAveragePrice?: 'null' | 'asc' | 'desc'
+        @Query('category') category?: string,
+        @Query('sortLastCalculated') sortLastCalculated?: 'asc' | 'desc',
+        @Query('sortPriceChangeStatus') sortPriceChangeStatus?: 'asc' | 'desc',
+        @Query('sortIsBuyRecommended') sortIsBuyRecommended?: 'asc' | 'desc',
+        @Query('sortPercentageChange') sortPercentageChange?: 'asc' | 'desc',
+        @Query('sortUpdatedAt') sortUpdatedAt?: 'asc' | 'desc',
+        @Query('sortAveragePrice') sortAveragePrice?: 'asc' | 'desc'
     ) {
         console.log("Analytics search request received with term:", searchTerm);
         const saleBoolean = sale === 'true' ? true : sale === 'false' ? false : undefined;
@@ -93,14 +108,28 @@ export class TescoController {
             { field: 'updatedAt', order: sortUpdatedAt },
             { field: 'averagePrice', order: sortAveragePrice },
         ]
-            .filter(item => item.order !== 'null' && item.order !== undefined)
-            .map(item => ({ field: item.field, order: item.order as 'asc' | 'desc' }));  // Type assertion to ensure correct type
+            .filter(item => item.order !== undefined)
+            .map(item => ({ field: item.field, order: item.order as 'asc' | 'desc' }));
 
-        return this.service.searchProductsByNameWithAnalytics(searchTerm, page, pageSize, saleBoolean, undefined, sortFields);
+        return this.service.searchProductsByNameWithAnalytics(
+            searchTerm,
+            Number(page),
+            Number(pageSize),
+            saleBoolean,
+            category,
+            sortFields
+        );
     }
 
 
-
+    @ApiOperation({ summary: 'Get analytics data for a specific product' })
+    @ApiParam({ name: 'productId', required: true, description: 'ID of the product' })
+    @ApiResponse({ status: 200, description: 'Analytics data for the specified product' })
+    @ApiResponse({ status: 404, description: 'Product analytics not found' })
+    @Get('analytics/:productId')
+    async getAnalyticsByProductId(@Param('productId') productId: string) {
+        return this.service.getAnalyticsByProductId(productId);
+    }
 
 
 
@@ -181,3 +210,5 @@ export class TescoController {
         return this.service.getProductById(category, productId);
     }
 }
+
+

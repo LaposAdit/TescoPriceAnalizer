@@ -341,17 +341,26 @@ let TescoService = class TescoService {
                 promotionImpact: null
             };
         }
-        const getCurrentPrice = (product) => {
+        const getEffectivePrice = (product) => {
             if (product.promotions && product.promotions.length > 0 && product.promotions[0].promotionPrice != null) {
                 return product.promotions[0].promotionPrice;
             }
             return product.price;
         };
-        const currentPrice = getCurrentPrice(currentProduct);
-        const previousPrice = getCurrentPrice(products[1]);
-        const priceDifference = previousPrice - currentPrice;
-        const percentageChange = (priceDifference / previousPrice) * 100;
-        const validPrices = products.slice(0, 5).map(getCurrentPrice);
+        const currentBasePrice = currentProduct.price;
+        const currentEffectivePrice = getEffectivePrice(currentProduct);
+        const previousEffectivePrice = getEffectivePrice(products[1]);
+        let priceDifference;
+        let percentageChange;
+        if (isOnSale) {
+            priceDifference = currentBasePrice - currentEffectivePrice;
+            percentageChange = (priceDifference / currentBasePrice) * 100;
+        }
+        else {
+            priceDifference = previousEffectivePrice - currentEffectivePrice;
+            percentageChange = (priceDifference / previousEffectivePrice) * 100;
+        }
+        const validPrices = products.slice(0, 5).map(getEffectivePrice);
         const averagePrice = validPrices.length > 0
             ? parseFloat((validPrices.reduce((sum, price) => sum + price, 0) / validPrices.length).toFixed(2))
             : null;
@@ -362,32 +371,30 @@ let TescoService = class TescoService {
             ? parseFloat(Math.sqrt(validPrices.map(price => Math.pow(price - averagePrice, 2)).reduce((sum, sq) => sum + sq, 0) / validPrices.length).toFixed(2))
             : null;
         let priceChangeStatus = 'unchanged';
-        if (currentPrice < previousPrice) {
+        if (priceDifference > 0) {
             priceChangeStatus = 'decreased';
         }
-        else if (currentPrice > previousPrice) {
+        else if (priceDifference < 0) {
             priceChangeStatus = 'increased';
         }
         let isBuyRecommended = 'neutral';
-        if (currentPrice < previousPrice || (averagePrice !== null && currentPrice < averagePrice)) {
+        if (priceDifference > 0 || (averagePrice !== null && currentEffectivePrice < averagePrice)) {
             isBuyRecommended = 'yes';
         }
-        else if (currentPrice > previousPrice) {
+        else if (priceDifference < 0) {
             isBuyRecommended = 'no';
         }
         else if (isOnSale) {
             isBuyRecommended = 'yes';
         }
-        const promotionImpact = isOnSale && previousPrice !== null
-            ? parseFloat((previousPrice - currentPrice).toFixed(2))
-            : null;
+        const promotionImpact = isOnSale ? parseFloat(priceDifference.toFixed(2)) : null;
         return {
-            priceDrop: currentPrice < previousPrice ? parseFloat(priceDifference.toFixed(2)) : 0,
-            priceIncrease: currentPrice > previousPrice ? parseFloat(Math.abs(priceDifference).toFixed(2)) : 0,
+            priceDrop: priceDifference > 0 ? parseFloat(priceDifference.toFixed(2)) : 0,
+            priceIncrease: priceDifference < 0 ? parseFloat(Math.abs(priceDifference).toFixed(2)) : 0,
             percentageChange: parseFloat(percentageChange.toFixed(2)),
             isBuyRecommended,
             isOnSale,
-            previousPrice: parseFloat(previousPrice.toFixed(2)),
+            previousPrice: parseFloat(previousEffectivePrice.toFixed(2)),
             priceChangeStatus,
             averagePrice,
             medianPrice,
@@ -395,7 +402,15 @@ let TescoService = class TescoService {
             promotionImpact
         };
     }
-    async getProductsAnalytics(category, page, pageSize, sale, randomize, sortFields) {
+    calculateSalePriceDifference(product) {
+        if (product.promotions && product.promotions.length > 0 && product.promotions[0].promotionPrice != null) {
+            const basePrice = product.price;
+            const salePrice = product.promotions[0].promotionPrice;
+            return parseFloat((basePrice - salePrice).toFixed(2));
+        }
+        return null;
+    }
+    async getProductsAnalytics(category, page, pageSize, sale, randomize, sortFields, priceChangeStatus) {
         const skip = (page - 1) * pageSize;
         const take = Number(pageSize);
         const allCategories = [
@@ -408,7 +423,7 @@ let TescoService = class TescoService {
             const model = this.getPrismaModel(category);
             let whereClause = {};
             if (sale !== undefined) {
-                whereClause = { hasPromotions: sale };
+                whereClause.hasPromotions = sale;
             }
             const latestProducts = await model.findMany({
                 where: whereClause,
@@ -416,17 +431,22 @@ let TescoService = class TescoService {
                 orderBy: { lastUpdated: 'desc' },
             });
             const productIds = latestProducts.map(product => product.productId);
+            let analyticsWhereClause = { productId: { in: productIds } };
+            if (priceChangeStatus) {
+                analyticsWhereClause.priceChangeStatus = priceChangeStatus;
+            }
             const analytics = await this.prisma.productAnalytics.findMany({
-                where: {
-                    productId: { in: productIds }
-                },
+                where: analyticsWhereClause,
             });
             const productMap = new Map();
             latestProducts.forEach(product => {
-                productMap.set(product.productId, {
-                    ...this.transformProduct({ ...product, category }),
-                    analytics: analytics.find(a => a.productId === product.productId)
-                });
+                const productAnalytics = analytics.find(a => a.productId === product.productId);
+                if (productAnalytics) {
+                    productMap.set(product.productId, {
+                        ...this.transformProduct({ ...product, category }),
+                        analytics: productAnalytics
+                    });
+                }
             });
             let products = Array.from(productMap.values());
             if (sortFields && sortFields.length > 0) {
@@ -517,16 +537,21 @@ let TescoService = class TescoService {
         }
         const searchPromises = models.map(({ model, category }) => this.searchModelForTermWithAnalytics(model, searchTerm, sale, category));
         const searchResults = await Promise.all(searchPromises);
-        const productsFromDb = searchResults.flat();
-        const latestProductsMap = new Map();
-        productsFromDb.forEach(product => {
-            if (!latestProductsMap.has(product.productId) || latestProductsMap.get(product.productId).lastUpdated < product.lastUpdated) {
-                latestProductsMap.set(product.productId, product);
-            }
+        let allProducts = [];
+        let totalProducts = 0;
+        const productMap = new Map();
+        searchResults.forEach(result => {
+            result.products.forEach(product => {
+                const existingProduct = productMap.get(product.productId);
+                if (!existingProduct || existingProduct.lastUpdated < product.lastUpdated) {
+                    productMap.set(product.productId, product);
+                }
+            });
+            totalProducts += result.totalCount;
         });
-        const latestProducts = Array.from(latestProductsMap.values());
+        allProducts = Array.from(productMap.values());
         if (sortFields && sortFields.length > 0) {
-            latestProducts.sort((a, b) => {
+            allProducts.sort((a, b) => {
                 for (const { field, order } of sortFields) {
                     const aValue = a.analytics ? a.analytics[field] : 0;
                     const bValue = b.analytics ? b.analytics[field] : 0;
@@ -542,10 +567,10 @@ let TescoService = class TescoService {
                 return 0;
             });
         }
-        const totalProducts = latestProducts.length;
+        totalProducts = allProducts.length;
         const totalPages = Math.ceil(totalProducts / pageSize);
-        const skip = (page - 1) * pageSize;
-        const paginatedProducts = latestProducts.slice(skip, skip + pageSize);
+        const startIndex = (page - 1) * pageSize;
+        const paginatedProducts = allProducts.slice(startIndex, startIndex + pageSize);
         return {
             totalPages,
             totalProducts,
@@ -563,21 +588,30 @@ let TescoService = class TescoService {
         if (sale !== undefined) {
             where['hasPromotions'] = sale;
         }
+        const totalCount = await model.count({ where });
         const results = await model.findMany({
             where,
             include: { promotions: true },
-            orderBy: { lastUpdated: 'desc' }
+            orderBy: { lastUpdated: 'desc' },
         });
-        const productsWithAnalytics = await Promise.all(results.map(async (product) => {
-            const productHistory = await model.findMany({
-                where: { productId: product.productId },
-                include: { promotions: true },
-                orderBy: { lastUpdated: 'desc' },
-            });
-            const analytics = this.calculateAnalytics(productHistory);
+        const productIds = results.map((product) => product.productId);
+        const analyticsData = await this.prisma.productAnalytics.findMany({
+            where: { productId: { in: productIds } }
+        });
+        const productsWithAnalytics = results.map((product) => {
+            const analytics = analyticsData.find(a => a.productId === product.productId) || this.calculateAnalytics([product]);
             return this.transformProductWithAnalytics({ ...product, category }, analytics);
-        }));
-        return productsWithAnalytics;
+        });
+        return { products: productsWithAnalytics, totalCount };
+    }
+    async getAnalyticsByProductId(productId) {
+        const analytics = await this.prisma.productAnalytics.findUnique({
+            where: { productId: productId }
+        });
+        if (!analytics) {
+            throw new common_1.NotFoundException(`Analytics for product with ID ${productId} not found`);
+        }
+        return analytics;
     }
 };
 exports.TescoService = TescoService;

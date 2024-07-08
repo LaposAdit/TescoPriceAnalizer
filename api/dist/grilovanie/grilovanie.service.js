@@ -86,8 +86,15 @@ let GrilovanieService = class GrilovanieService {
         return allProducts;
     }
     extractPromotionPrice(offerText) {
-        const match = offerText.match(/S Clubcard ([0-9,.]+) €/);
-        return match ? parseFloat(match[1].replace(',', '.')) : null;
+        let match = offerText.match(/S Clubcard ([0-9,.]+) €/);
+        if (match) {
+            return parseFloat(match[1].replace(',', '.'));
+        }
+        match = offerText.match(/teraz ([0-9,.]+) €/);
+        if (match) {
+            return parseFloat(match[1].replace(',', '.'));
+        }
+        return null;
     }
     transformData(data) {
         const productItems = data.productsByCategory.data.results.productItems;
