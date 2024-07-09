@@ -5,6 +5,7 @@ import axios from 'axios';
 import Link from 'next/link';
 import { GlobalAPI_IP } from '../compoments/global';
 import React from 'react';
+import Header from '../compoments/navbar';
 
 interface Promotion {
     promotionId: string;
@@ -193,128 +194,132 @@ const HomePage = () => {
     };
 
     return (
-        <div className="container mx-auto p-6">
-            <h1 className="text-3xl font-bold mb-6 text-center">Products</h1>
+        <>
+            <div className="container mx-auto px-4 py-8 ">
+                <h1 className="text-4xl font-bold mb-8 text-center text-gray-800">Product Catalog</h1>
 
-            <div className="mb-6 flex justify-center">
-                <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={handleSearchChange}
-                    placeholder="Search products..."
-                    className="border p-2 rounded-md bg-white w-2/3"
-                />
-            </div>
-
-            <div className="flex flex-col md:flex-row md:justify-between mb-6">
-                <div className="flex space-x-4">
-                    <select
-                        value={category}
-                        onChange={(e) => handleCategoryChange(e.target.value)}
-                        className="border p-2 rounded-md bg-white"
-                    >
-                        <option value="">All Categories</option>
-                        {availableCategories.map((cat) => (
-                            <option key={cat} value={cat}>{categoryMap[cat] || cat}</option>
-                        ))}
-                    </select>
-
-                    <select
-                        value={String(sale)}
-                        onChange={(e) => handleSaleChange(e.target.value === 'null' ? null : e.target.value === 'true')}
-                        className="border p-2 rounded-md bg-white"
-                    >
-                        <option value="null">All</option>
-                        <option value="true">Sale</option>
-                        <option value="false">Not Sale</option>
-                    </select>
-
-                    <select
-                        value={pageSize}
-                        onChange={(e) => setPageSize(Number(e.target.value))}
-                        className="border p-2 rounded-md bg-white"
-                    >
-                        <option value={25}>25</option>
-                        <option value={50}>50</option>
-                        <option value={100}>100</option>
-                    </select>
+                <div className="mb-8">
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={handleSearchChange}
+                        placeholder="Search products..."
+                        className="w-full md:w-2/3 mx-auto block border border-gray-300 rounded-full px-6 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out shadow-sm"
+                    />
                 </div>
 
-                <div className="mt-4 md:mt-0">
-                    <p className="text-gray-700">Total Products: {totalProducts}</p>
-                    <p className="text-gray-700">Page {page} of {totalPages}</p>
-                </div>
-            </div>
-
-            {loading ? (
-                <div className="flex justify-center items-center h-64 min-h-screen">
-                    <svg className="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                    </svg>
-                </div>
-            ) : error ? (
-                <p className="text-red-500">{error}</p>
-            ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {products && products.length > 0 ? products.map((product) => {
-                        const promotion = product.promotions[0];
-                        return (
-                            <div key={product.dbId} className="bg-white border rounded-lg shadow-md p-4 flex flex-col">
-                                <img src={product.imageUrl} alt={product.title} className="object-contain h-40 mb-4 rounded-lg" />
-                                <h2 className="text-lg font-semibold mb-2">{product.title}</h2>
-                                <p className="text-gray-700 mb-1">Price: €{product.price?.toFixed(2) ?? 'N/A'}</p>
-                                {promotion && promotion.promotionPrice !== null && (
-                                    <p className="text-green-500 mb-1">Sale Price: €{promotion.promotionPrice.toFixed(2)}</p>
-                                )}
-                                <p className="text-gray-700 mb-1">Unit Price: €{product.unitPrice?.toFixed(2) ?? 'N/A'} per {product.unitOfMeasure}</p>
-                                <p className="text-gray-700 mb-1">Sale: {product.hasPromotions ? 'Yes' : 'No'}</p>
-                                <p className="text-gray-700 mb-1">Aisle: {product.aisleName}</p>
-                                <p className="text-gray-700 mb-1">Department: {product.superDepartmentName}</p>
-                                <p className="text-gray-700 mb-1">Department: {product.lastUpdated}</p>
-                                {promotion && (
-                                    <p className="text-green-500 mb-2">{promotion.offerText}</p>
-                                )}
-                                <Link className="text-blue-500 hover:underline mt-auto" href={`/tesco/${product.productId}?category=${product.category}`}>
-                                    View Details
-                                </Link>
-                            </div>
-                        );
-                    }) : (
-                        <p className="text-gray-500">No products found</p>
-                    )}
-                </div>
-            )}
-
-            <div className="mt-6 flex justify-center">
-                <nav className="inline-flex -space-x-px">
-                    <button
-                        onClick={() => handlePageChange(Math.max(page - 1, 1))}
-                        className={`px-3 py-2 ml-0 leading-tight border rounded-l-lg ${page === 1 ? 'text-gray-300 bg-gray-100 cursor-not-allowed' : 'text-blue-600 bg-white border-gray-300 hover:bg-gray-100 hover:text-gray-700'}`}
-                        disabled={page === 1}
-                    >
-                        Previous
-                    </button>
-                    {getPageNumbers().map((pageNumber, index) => (
-                        <button
-                            key={index}
-                            onClick={() => handlePageChange(pageNumber === '...' ? page + 1 : Number(pageNumber))}
-                            disabled={pageNumber === '...'}
-                            className={`px-3 py-2 leading-tight border ${pageNumber === page ? 'text-blue-600 bg-blue-50 border-blue-300' : 'text-gray-500 bg-white border-gray-300 hover:bg-gray-100 hover:text-gray-700'}`}
+                <div className="flex flex-col md:flex-row md:justify-between mb-8 space-y-4 md:space-y-0">
+                    <div className="flex flex-wrap gap-4">
+                        <select
+                            value={category}
+                            onChange={(e) => handleCategoryChange(e.target.value)}
+                            className="border border-gray-300 rounded-md px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out shadow-sm"
                         >
-                            {pageNumber}
+                            <option value="">All Categories</option>
+                            {availableCategories.map((cat) => (
+                                <option key={cat} value={cat}>{categoryMap[cat] || cat}</option>
+                            ))}
+                        </select>
+
+                        <select
+                            value={String(sale)}
+                            onChange={(e) => handleSaleChange(e.target.value === 'null' ? null : e.target.value === 'true')}
+                            className="border border-gray-300 rounded-md px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out shadow-sm"
+                        >
+                            <option value="null">All Products</option>
+                            <option value="true">On Sale</option>
+                            <option value="false">Regular Price</option>
+                        </select>
+
+                        <select
+                            value={pageSize}
+                            onChange={(e) => setPageSize(Number(e.target.value))}
+                            className="border border-gray-300 rounded-md px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out shadow-sm"
+                        >
+                            <option value={25}>25 per page</option>
+                            <option value={50}>50 per page</option>
+                            <option value={100}>100 per page</option>
+                        </select>
+                    </div>
+
+                    <div className="text-right text-sm text-gray-600">
+                        <p>Total Products: <span className="font-semibold">{totalProducts}</span></p>
+                        <p>Page <span className="font-semibold">{page}</span> of <span className="font-semibold">{totalPages}</span></p>
+                    </div>
+                </div>
+
+                {loading ? (
+                    <div className="flex justify-center items-center h-64">
+                        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+                    </div>
+                ) : error ? (
+                    <p className="text-red-500 text-center">{error}</p>
+                ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                        {products && products.length > 0 ? products.map((product) => {
+                            const promotion = product.promotions[0];
+                            return (
+                                <Link key={product.dbId} href={`/tesco/${product.productId}?category=${product.category}`} className="group">
+                                    <div className="bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 ease-in-out group-hover:shadow-lg group-hover:scale-105" style={{ width: '270px', height: '350px' }}>
+                                        <div className="flex items-center justify-center h-[200px]">
+                                            <img src={product.imageUrl} alt={product.title} className="w-[180px] h-[180px] object-contain p-2" />
+                                        </div>
+                                        <div className="p-4 h-[150px] flex flex-col justify-between">
+                                            <div>
+                                                <h2 className="text-sm font-semibold mb-2 truncate text-gray-800">{product.title}</h2>
+                                                <div className="flex justify-between items-baseline mb-1">
+                                                    <p className="text-gray-600 text-xs">€{product.price?.toFixed(2) ?? 'N/A'}</p>
+                                                    <p className="text-gray-500 text-xs">{product.unitPrice?.toFixed(2) ?? 'N/A'}/{product.unitOfMeasure}</p>
+                                                </div>
+                                                {promotion && promotion.promotionPrice !== null && (
+                                                    <p className="text-green-600 text-sm font-semibold mb-1">Sale: €{promotion.promotionPrice.toFixed(2)}</p>
+                                                )}
+                                                {promotion && (
+                                                    <p className="text-green-600 text-xs mb-2 truncate">{promotion.offerText}</p>
+                                                )}
+                                            </div>
+                                            <p className="text-blue-600 text-xs group-hover:underline mt-auto">View Details</p>
+                                        </div>
+                                    </div>
+                                </Link>
+                            );
+                        }) : (
+                            <p className="text-gray-500 col-span-full text-center">No products found</p>
+                        )}
+                    </div>
+                )}
+
+
+                <div className="mt-8 flex justify-center">
+                    <nav className="inline-flex rounded-md shadow-sm">
+                        <button
+                            onClick={() => handlePageChange(Math.max(page - 1, 1))}
+                            className={`px-4 py-2 rounded-l-md text-sm font-medium ${page === 1 ? 'text-gray-300 bg-gray-100 cursor-not-allowed' : 'text-gray-700 bg-white hover:bg-gray-50'}`}
+                            disabled={page === 1}
+                        >
+                            Previous
                         </button>
-                    ))}
-                    <button
-                        onClick={() => handlePageChange(Math.min(page + 1, totalPages))}
-                        className={`px-3 py-2 leading-tight border rounded-r-lg ${page === totalPages ? 'text-gray-300 bg-gray-100 cursor-not-allowed' : 'text-blue-600 bg-white border-gray-300 hover:bg-gray-100 hover:text-gray-700'}`}
-                        disabled={page === totalPages}
-                    >
-                        Next
-                    </button>
-                </nav>
+                        {getPageNumbers().map((pageNumber, index) => (
+                            <button
+                                key={index}
+                                onClick={() => handlePageChange(pageNumber === '...' ? page + 1 : Number(pageNumber))}
+                                disabled={pageNumber === '...'}
+                                className={`px-4 py-2 text-sm font-medium ${pageNumber === page ? 'text-blue-600 bg-blue-50' : pageNumber === '...' ? 'text-gray-700 bg-white cursor-default' : 'text-gray-700 bg-white hover:bg-gray-50'}`}
+                            >
+                                {pageNumber}
+                            </button>
+                        ))}
+                        <button
+                            onClick={() => handlePageChange(Math.min(page + 1, totalPages))}
+                            className={`px-4 py-2 rounded-r-md text-sm font-medium ${page === totalPages ? 'text-gray-300 bg-gray-100 cursor-not-allowed' : 'text-gray-700 bg-white hover:bg-gray-50'}`}
+                            disabled={page === totalPages}
+                        >
+                            Next
+                        </button>
+                    </nav>
+                </div>
             </div>
-        </div>
+        </>
     );
 };
 

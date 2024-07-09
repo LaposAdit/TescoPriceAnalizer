@@ -108,5 +108,22 @@ export class FavoriteService {
 
         // Filter out any null results (products not found)
         return favoriteProducts.filter(product => product !== null);
+
+
+
     }
+
+
+    async isFavorite(userId: string, productId: string): Promise<boolean> {
+        const favorite = await this.prisma.favorite.findFirst({
+            where: {
+                userId,
+                productId,
+            },
+        });
+        return favorite !== null;
+    }
+
+
+
 }

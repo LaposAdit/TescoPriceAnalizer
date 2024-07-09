@@ -28,6 +28,9 @@ let FavoriteController = class FavoriteController {
     async removeFavorite(userId, productId) {
         return this.favoriteService.removeFavorite(userId, productId);
     }
+    async isFavorite(userId, productId) {
+        return this.favoriteService.isFavorite(userId, productId);
+    }
     async getFavorites(userId) {
         return this.favoriteService.getFavorites(userId);
     }
@@ -52,6 +55,16 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], FavoriteController.prototype, "removeFavorite", null);
+__decorate([
+    (0, swagger_1.ApiOperation)({ summary: 'Check if a product is a favorite' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Returns true if the product is a favorite, otherwise false.' }),
+    (0, common_1.Get)('isFavorite'),
+    __param(0, (0, common_1.Query)('userId')),
+    __param(1, (0, common_1.Query)('productId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], FavoriteController.prototype, "isFavorite", null);
 __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'Get all favorites for a user' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'List of favorites for the user.' }),

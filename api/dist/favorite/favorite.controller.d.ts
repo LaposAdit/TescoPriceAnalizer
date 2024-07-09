@@ -11,6 +11,7 @@ export declare class FavoriteController {
         createdAt: Date;
     }>;
     removeFavorite(userId: string, productId: string): Promise<import(".prisma/client").Prisma.BatchPayload>;
+    isFavorite(userId: string, productId: string): Promise<boolean>;
     getFavorites(userId: string): Promise<{
         product: {
             productId: any;

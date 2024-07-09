@@ -26,12 +26,26 @@ const ProductPriceChart: React.FC<ProductPriceChartProps> = ({ data, categories 
             zoom: {
                 enabled: false,
             },
+            animations: {
+                enabled: true,
+                easing: 'easeinout',
+                speed: 800,
+                animateGradually: {
+                    enabled: true,
+                    delay: 150
+                },
+                dynamicAnimation: {
+                    enabled: true,
+                    speed: 350
+                }
+            }
         },
         tooltip: {
             enabled: true,
+            theme: 'light',
             x: {
-                show: false,
-                format: 'dd MMM',
+                show: true,
+                format: 'dd MMM yyyy',
             },
             y: {
                 formatter: (value) => `€${value.toFixed(2)}`,
@@ -41,9 +55,21 @@ const ProductPriceChart: React.FC<ProductPriceChartProps> = ({ data, categories 
             type: "gradient",
             gradient: {
                 shadeIntensity: 1,
-                opacityFrom: 0.3,
-                opacityTo: 0.9,
+                opacityFrom: 0.7,
+                opacityTo: 0.3,
                 stops: [0, 90, 100],
+                colorStops: [
+                    {
+                        offset: 0,
+                        color: "#60A5FA",
+                        opacity: 0.7
+                    },
+                    {
+                        offset: 100,
+                        color: "#93C5FD",
+                        opacity: 0.3
+                    },
+                ]
             },
         },
         dataLabels: {
@@ -52,10 +78,11 @@ const ProductPriceChart: React.FC<ProductPriceChartProps> = ({ data, categories 
         stroke: {
             curve: 'smooth',
             width: 3,
+            colors: ['#3B82F6'],
         },
         grid: {
             show: true,
-            borderColor: '#90A4AE',
+            borderColor: '#E5E7EB',
             strokeDashArray: 4,
             padding: {
                 top: 10,
@@ -73,9 +100,10 @@ const ProductPriceChart: React.FC<ProductPriceChartProps> = ({ data, categories 
                 trim: true,
                 style: {
                     fontSize: '12px',
-                    fontWeight: 400,
+                    fontWeight: 500,
+                    colors: ['#6B7280'],
                 },
-                format: 'dd MMM',
+                format: 'dd MMM yy',
             },
             axisBorder: {
                 show: false,
@@ -85,14 +113,24 @@ const ProductPriceChart: React.FC<ProductPriceChartProps> = ({ data, categories 
             },
         },
         yaxis: {
-            min: 0, // Ensure y-axis starts at 0
+            min: 0,
             labels: {
                 style: {
                     fontSize: '12px',
-                    fontWeight: 400,
+                    fontWeight: 500,
+                    colors: ['#6B7280'],
                 },
                 formatter: (value) => `€${value.toFixed(2)}`,
             },
+        },
+        markers: {
+            size: 4,
+            colors: ['#3B82F6'],
+            strokeColors: '#FFFFFF',
+            strokeWidth: 2,
+            hover: {
+                size: 6,
+            }
         },
         responsive: [{
             breakpoint: 480,
@@ -108,7 +146,6 @@ const ProductPriceChart: React.FC<ProductPriceChartProps> = ({ data, categories 
         {
             name: "Product Price",
             data: positiveData,
-            color: "#1A56DB",
         }
     ];
 

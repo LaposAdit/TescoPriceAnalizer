@@ -4,6 +4,8 @@ import axios from 'axios';
 import ProductPriceChart from "../utils/ProductPriceChart";
 import HistoryTable from "../utils/HistoryTable";
 import { useUser } from '@clerk/clerk-react';
+import Header from "@/app/compoments/navbar";
+import { Heart, TrendingUp, TrendingDown, DollarSign, ShoppingCart, Tag } from 'lucide-react';
 
 interface Promotion {
     promotionId: string;
@@ -14,15 +16,6 @@ interface Promotion {
     attributes: string[];
     promotionPrice: number | null;
 }
-
-interface Favorite {
-    id: number;
-    userId: string;
-    productId: string;
-    category: string;
-    createdAt: string;
-}
-
 
 interface ProductDetail {
     productId: string;
@@ -75,10 +68,28 @@ export default function Page({ params, searchParams }: PageProps) {
     const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
     const { user } = useUser();
 
-    if (user) {
-        console.log(user.id); // This will log the user's ID
-    }
+    const addToFavorites = async () => {
+        if (!user) {
+            console.error("User not logged in");
+            return;
+        }
 
+        try {
+            const response = await axios.post('http://localhost:3000/favorites', {
+                userId: user.id,
+                productId: product?.productId,
+                category: product?.category
+            }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log('Added to favorites:', response.data);
+        } catch (err) {
+            console.error('Error adding to favorites:', err);
+        }
+    };
 
     useEffect(() => {
         const fetchProductDetail = async () => {
@@ -120,37 +131,6 @@ export default function Page({ params, searchParams }: PageProps) {
         fetchProductDetail();
     }, [params.productId, searchParams.category]);
 
-
-    // Handle add to favorites
-    const addToFavorites = async () => {
-        if (!user) {
-            // Handle user not logged in scenario
-            return;
-        }
-
-        try {
-            const favorite: Favorite = {
-                id: 2,  // Replace with dynamic ID or manage on server side
-                userId: user.id,
-                productId: params.productId,
-                category: searchParams.category,
-                createdAt: new Date().toISOString()
-            };
-
-            const response = await axios.post('http://localhost:3000/favorites', favorite, {
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            console.log('Added to favorites:', response.data);
-            // Handle success (e.g., show a success message)
-        } catch (error) {
-            console.error('Error adding to favorites:', error);
-            // Handle error (e.g., show an error message)
-        }
-    };
-
     // Preprocess the history data to consolidate prices by date
     const consolidatedHistory = history.reduce((acc, item) => {
         const date = new Date(item.lastUpdated).toLocaleDateString();
@@ -168,106 +148,172 @@ export default function Page({ params, searchParams }: PageProps) {
     const combinedData = Object.values(consolidatedHistory);
 
     return (
-        <div className="min-h-screen py-10 px-4 lg:px-20 bg-gray-100">
-            {loading ? (
-                <div role="status" className="flex justify-center items-center h-64">
-                    <svg aria-hidden="true" className="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor" />
-                        <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill" />
-                    </svg>
-                    <span className="sr-only">Loading...</span>
-                </div>
-            ) : error ? (
-                <p className="text-red-500 text-center">{error}</p>
-            ) : product ? (
-                <div className="flex flex-col xl:flex-row gap-8">
-                    <div className="w-full xl:w-1/3">
+        <>
+            <div className="min-h-screen rounded-3xl bg-gray-100  py-12 px-4 sm:px-6 lg:px-8">
+                {loading ? (
+                    <div role="status" className="flex justify-center items-center h-64">
+                        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+                    </div>
+                ) : error ? (
+                    <div className="text-center py-12">
+                        <div className="text-red-500 text-xl font-semibold">{error}</div>
+                    </div>
+                ) : product ? (
+                    <div className="max-w-7xl mx-auto">
 
-                        <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-4">
-                            <img className="w-40 h-40 object-contain rounded-md" src={product.imageUrl} alt={product.title} />
-                            <div className="flex flex-col space-y-1">
-                                <h1 className="text-xl font-bold text-gray-800">{product.title}</h1>
-                                <p className="text-lg text-gray-700">Price: <span className="font-semibold text-blue-600">€{product.price?.toFixed(2) ?? 'N/A'}</span></p>
-                                <p className="text-sm text-gray-600">Unit Price: €{product.unitPrice?.toFixed(2) ?? 'N/A'} per {product.unitOfMeasure ?? ''}</p>
-                                <div className="flex items-center space-x-2">
-                                    <span className="inline-block px-2 py-1 text-xs font-semibold text-white bg-blue-500 rounded-full">Sale: {product.hasPromotions ? 'Yes' : 'No'}</span>
+                        <div className="bg-white shadow-xl rounded-xl overflow-hidden">
+                            <div className="p-8">
+                                <div className="flex flex-col md:flex-row">
+                                    <div className="md:w-1/3 flex justify-center items-start mb-6 md:mb-0">
+                                        <div className="w-[250px] h-[250px] flex items-center justify-center bg-white rounded-lg overflow-hidden shadow-inner">
+                                            <img
+                                                src={product.imageUrl}
+                                                alt={product.title}
+                                                className="w-[500px] h-[500px] object-contain"
+                                                style={{ mixBlendMode: 'multiply' }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="md:w-2/3 md:pl-8">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                                <Tag size={16} className="mr-1" />
+                                                {product.category}
+                                            </span>
+                                            <button
+                                                onClick={addToFavorites}
+                                                className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-full text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                            >
+                                                <Heart size={16} className="mr-1" />
+                                                Add to Favorites
+                                            </button>
+                                        </div>
+                                        <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.title}</h1>
+                                        <div className="mb-6">
+                                            {product.hasPromotions && product.promotions.length > 0 && product.promotions[0].promotionPrice !== null ? (
+                                                <>
+                                                    <div className="flex items-center">
+                                                        <span className="text-4xl font-bold text-green-600">€{product.promotions[0].promotionPrice.toFixed(2)}</span>
+                                                        <span className="ml-2 text-lg text-gray-600">per {product.unitOfMeasure}</span>
+                                                    </div>
+                                                    <div className="mt-2 flex items-center">
+                                                        <span className="text-xl text-gray-500 line-through">€{product.price.toFixed(2)}</span>
+                                                        <span className="ml-2 text-sm text-green-600 font-semibold">
+                                                            Save €{(product.price - product.promotions[0].promotionPrice).toFixed(2)}
+                                                        </span>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div className="flex items-center">
+                                                    <span className="text-4xl font-bold text-indigo-600">€{product.price?.toFixed(2) ?? 'N/A'}</span>
+                                                    <span className="ml-2 text-lg text-gray-600">per {product.unitOfMeasure}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                                            <div className="bg-gray-50 rounded-lg p-4">
+                                                <p className="text-sm text-gray-500 mb-1">Unit Price</p>
+                                                <p className="text-lg font-semibold">€{product.unitPrice?.toFixed(2) ?? 'N/A'} per {product.unitOfMeasure}</p>
+                                            </div>
+                                            <div className="bg-gray-50 rounded-lg p-4">
+                                                <p className="text-sm text-gray-500 mb-1">Promotion Status</p>
+                                                {product.hasPromotions ? (
+                                                    <p className="text-lg font-semibold text-green-600 flex items-center">
+                                                        <ShoppingCart size={20} className="mr-2" />
+                                                        On Sale
+                                                    </p>
+                                                ) : (
+                                                    <p className="text-lg font-semibold text-gray-600 flex items-center">
+                                                        <DollarSign size={20} className="mr-2" />
+                                                        Regular Price
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="flex justify-end mt-4">
-                                <button onClick={addToFavorites} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md shadow-md">
-                                    Add to Favorites
-                                </button>
-                            </div>
                         </div>
 
-
-                        <div className="bg-white rounded-lg shadow-lg p-6 mt-6">
-                            {analytics && (
-                                <div className="">
-                                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Price Analysis</h2>
-                                    <div className="p-4 bg-blue-100 rounded-lg flex flex-col items-center mb-4">
-                                        <p className="text-xl font-semibold text-gray-700">Actual Price</p>
-                                        <p className="text-2xl font-bold text-blue-600">€{(product.promotions.length > 0 && product.promotions[0].promotionPrice !== null ? product.promotions[0].promotionPrice : product.price).toFixed(2)}</p>
+                        {analytics && (
+                            <div className="mt-12 bg-white shadow-xl rounded-lg overflow-hidden">
+                                <div className="px-8 py-6">
+                                    <h2 className="text-2xl font-bold text-gray-900 mb-6">Price Analysis</h2>
+                                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                                        <div className="bg-blue-50 rounded-lg p-6">
+                                            <div className="text-blue-500 text-sm font-medium uppercase">Current Price</div>
+                                            <div className="mt-2 flex items-baseline">
+                                                <span className="text-3xl font-semibold text-blue-600">
+                                                    €{(product.promotions.length > 0 && product.promotions[0].promotionPrice !== null ? product.promotions[0].promotionPrice : product.price).toFixed(2)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className={`rounded-lg p-6 ${analytics.priceChangeStatus === 'decreased' ? 'bg-green-50' : 'bg-red-50'}`}>
+                                            <div className={`${analytics.priceChangeStatus === 'decreased' ? 'text-green-500' : 'text-red-500'} text-sm font-medium uppercase`}>
+                                                Price {analytics.priceChangeStatus === 'decreased' ? 'Drop' : 'Increase'}
+                                            </div>
+                                            <div className="mt-2 flex items-baseline">
+                                                <span className={`text-3xl font-semibold ${analytics.priceChangeStatus === 'decreased' ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {analytics.priceChangeStatus === 'decreased' ? '-' : '+'}€{(analytics.priceChangeStatus === 'decreased' ? analytics.priceDrop : analytics.priceIncrease).toFixed(2)}
+                                                </span>
+                                                <span className="ml-2 text-sm text-gray-500">
+                                                    ({Math.abs(analytics.percentageChange).toFixed(2)}%)
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="bg-gray-50 rounded-lg p-6">
+                                            <div className="text-gray-500 text-sm font-medium uppercase">Buy Recommendation</div>
+                                            <div className="mt-2 flex items-center">
+                                                <span className={`text-2xl font-semibold ${analytics.isBuyRecommended === 'yes' ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {analytics.isBuyRecommended === 'yes' ? 'Recommended' : 'Not Recommended'}
+                                                </span>
+                                                {analytics.isBuyRecommended === 'yes' ? (
+                                                    <TrendingUp size={24} className="ml-2 text-green-500" />
+                                                ) : (
+                                                    <TrendingDown size={24} className="ml-2 text-red-500" />
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4 mb-4">
-                                        <div className={`p-4 rounded-lg ${analytics.priceChangeStatus === 'decreased' ? 'bg-green-100' : 'bg-red-100'} flex flex-col items-center`}>
-                                            <p className="text-xl font-semibold text-gray-700">Price {analytics.priceChangeStatus === 'decreased' ? 'Drop' : 'Increase'}</p>
-                                            <p className="text-2xl font-bold">{analytics.priceChangeStatus === 'decreased' ? '-' : '+'}€{(analytics.priceChangeStatus === 'decreased' ? analytics.priceDrop : analytics.priceIncrease).toFixed(2)}</p>
+                                    <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-3">
+                                        <div className="bg-gray-50 rounded-lg p-6">
+                                            <div className="text-gray-500 text-sm font-medium uppercase">Average Price</div>
+                                            <div className="mt-2 text-2xl font-semibold text-gray-900">€{analytics.averagePrice?.toFixed(2) ?? 'N/A'}</div>
                                         </div>
-                                        <div className={`p-4 rounded-lg ${analytics.priceChangeStatus === 'decreased' ? 'bg-green-100' : 'bg-red-100'} flex flex-col items-center`}>
-                                            <p className="text-xl font-semibold text-gray-700">Percentage {analytics.priceChangeStatus === 'decreased' ? 'Drop' : 'Increase'}</p>
-                                            <p className="text-2xl font-bold">{analytics.priceChangeStatus === 'decreased' ? '-' : '+'}{Math.abs(analytics.percentageChange).toFixed(2)}%</p>
+                                        <div className="bg-gray-50 rounded-lg p-6">
+                                            <div className="text-gray-500 text-sm font-medium uppercase">Median Price</div>
+                                            <div className="mt-2 text-2xl font-semibold text-gray-900">€{analytics.medianPrice?.toFixed(2) ?? 'N/A'}</div>
                                         </div>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                        <div className="bg-white p-4 rounded-lg shadow flex flex-col items-center">
-                                            <p className="text-md font-semibold text-gray-700">Is Buy Recommended</p>
-                                            <p className="text-lg font-bold text-blue-600">{analytics.isBuyRecommended === 'yes' ? 'Yes' : 'No'}</p>
-                                        </div>
-                                        <div className="bg-white p-4 rounded-lg shadow flex flex-col items-center">
-                                            <p className="text-md font-semibold text-gray-700">Average Price</p>
-                                            <p className="text-lg font-bold text-yellow-600">€{analytics.averagePrice?.toFixed(2) ?? 'N/A'}</p>
-                                        </div>
-                                        <div className="bg-white p-4 rounded-lg shadow flex flex-col items-center">
-                                            <p className="text-md font-semibold text-gray-700">Median Price</p>
-                                            <p className="text-lg font-bold text-yellow-600">€{analytics.medianPrice?.toFixed(2) ?? 'N/A'}</p>
-                                        </div>
-                                        <div className="bg-white p-4 rounded-lg shadow flex flex-col items-center">
-                                            <p className="text-md font-semibold text-gray-700">Price Standard Deviation</p>
-                                            <p className="text-lg font-bold text-yellow-600">€{analytics.priceStdDev?.toFixed(2) ?? 'N/A'}</p>
-                                        </div>
-                                        <div className="bg-white p-4 rounded-lg shadow flex flex-col items-center">
-                                            <p className="text-md font-semibold text-gray-700">Promotion Impact</p>
-                                            <p className="text-lg font-bold text-green-600">€{analytics.promotionImpact?.toFixed(2) ?? 'N/A'}</p>
-                                        </div>
-                                        <div className={`bg-white p-4 rounded-lg shadow flex flex-col items-center ${analytics.priceChangeStatus === 'decreased' ? 'text-green-600' : 'text-red-600'}`}>
-                                            <p className="text-md font-semibold text-gray-700">Price Change Status</p>
-                                            <p className="text-lg font-bold">{analytics.priceChangeStatus === 'decreased' ? 'Decreased' : 'Increased'}</p>
-                                        </div>
-                                        <div className="bg-white p-4 rounded-lg shadow flex flex-col items-center">
-                                            <p className="text-md font-semibold text-gray-700">Last Calculated</p>
-                                            <p className="text-sm text-gray-500">{new Date(analytics.lastCalculated).toLocaleDateString()}</p>
+                                        <div className="bg-gray-50 rounded-lg p-6">
+                                            <div className="text-gray-500 text-sm font-medium uppercase">Price Standard Deviation</div>
+                                            <div className="mt-2 text-2xl font-semibold text-gray-900">€{analytics.priceStdDev?.toFixed(2) ?? 'N/A'}</div>
                                         </div>
                                     </div>
                                 </div>
-                            )}
-                        </div>
-                    </div>
+                            </div>
+                        )}
 
-                    <div className="flex-1 space-y-6">
-                        <div className="bg-white rounded-lg shadow-lg p-6">
-                            <h2 className="text-2xl font-bold text-gray-800 mb-4">Price History</h2>
-                            <HistoryTable history={history} />
-                        </div>
-                        <div className="bg-white rounded-lg shadow-lg p-6">
-                            <h2 className="text-2xl font-bold text-gray-800 mb-4">Price History Chart</h2>
-                            <ProductPriceChart data={combinedData} categories={chartCategories} />
+                        <div className="mt-12 space-y-12">
+                            <div className="bg-white shadow-xl rounded-lg overflow-hidden">
+                                <div className="px-8 py-6">
+                                    <h2 className="text-2xl font-bold text-gray-900 mb-6">Price History</h2>
+                                    <HistoryTable history={history} />
+                                </div>
+                            </div>
+                            <div className="bg-white shadow-xl rounded-lg overflow-hidden">
+                                <div className="px-8 py-6">
+                                    <h2 className="text-2xl font-bold text-gray-900 mb-6">Price History Chart</h2>
+                                    <ProductPriceChart data={combinedData} categories={chartCategories} />
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            ) : (
-                <p className="text-gray-500 text-center">Product not found</p>
-            )}
-        </div>
+                ) : (
+                    <div className="text-center py-12">
+                        <div className="text-gray-500 text-xl font-semibold">Product not found</div>
+                    </div>
+                )}
+            </div>
+        </>
     );
 }

@@ -108,6 +108,15 @@ let FavoriteService = class FavoriteService {
         }));
         return favoriteProducts.filter(product => product !== null);
     }
+    async isFavorite(userId, productId) {
+        const favorite = await this.prisma.favorite.findFirst({
+            where: {
+                userId,
+                productId,
+            },
+        });
+        return favorite !== null;
+    }
 };
 exports.FavoriteService = FavoriteService;
 exports.FavoriteService = FavoriteService = __decorate([

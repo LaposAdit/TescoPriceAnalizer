@@ -47,4 +47,5 @@ export declare class FavoriteService {
         category: string;
         createdAt: Date;
     }[]>;
+    isFavorite(userId: string, productId: string): Promise<boolean>;
 }

@@ -27,6 +27,17 @@ export class FavoriteController {
         return this.favoriteService.removeFavorite(userId, productId);
     }
 
+
+    @ApiOperation({ summary: 'Check if a product is a favorite' })
+    @ApiResponse({ status: 200, description: 'Returns true if the product is a favorite, otherwise false.' })
+    @Get('isFavorite')
+    async isFavorite(
+        @Query('userId') userId: string,
+        @Query('productId') productId: string,
+    ) {
+        return this.favoriteService.isFavorite(userId, productId);
+    }
+
     @ApiOperation({ summary: 'Get all favorites for a user' })
     @ApiResponse({ status: 200, description: 'List of favorites for the user.' })
     @Get(':userId')
