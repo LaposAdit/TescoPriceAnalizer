@@ -12,8 +12,6 @@ export class TescoController {
 
 
     @Get('analytics')
-
-
     @ApiOperation({ summary: 'Get products with analytics' })
     @ApiQuery({
         name: 'category',
@@ -65,6 +63,10 @@ export class TescoController {
 
         return this.service.getProductsAnalytics(category, page, pageSize, saleBoolean, false, sortFields, priceChangeStatus);
     }
+
+
+
+    @Get('search/analytics')
     @ApiOperation({ summary: 'Search products by name with analytics' })
     @ApiQuery({ name: 'searchTerm', required: true, description: 'Search term for product title' })
     @ApiQuery({ name: 'page', required: false, description: 'Page number', type: Number, example: 1 })
@@ -83,7 +85,6 @@ export class TescoController {
     @ApiQuery({ name: 'sortUpdatedAt', required: false, enum: ['asc', 'desc'], description: 'Sort by updatedAt' })
     @ApiQuery({ name: 'sortAveragePrice', required: false, enum: ['asc', 'desc'], description: 'Sort by averagePrice' })
     @ApiResponse({ status: 200, description: 'List of products matching the search term with analytics' })
-    @Get('search/analytics')
     async searchProductsByNameWithAnalytics(
         @Query('searchTerm') searchTerm: string,
         @Query('page') page = 1,
@@ -121,29 +122,23 @@ export class TescoController {
         );
     }
 
-
+    @Get('analytics/:productId')
     @ApiOperation({ summary: 'Get analytics data for a specific product' })
     @ApiParam({ name: 'productId', required: true, description: 'ID of the product' })
     @ApiResponse({ status: 200, description: 'Analytics data for the specified product' })
     @ApiResponse({ status: 404, description: 'Product analytics not found' })
-    @Get('analytics/:productId')
     async getAnalyticsByProductId(@Param('productId') productId: string) {
         return this.service.getAnalyticsByProductId(productId);
     }
 
 
-
-
-
-
-
     @Post('calculate-analytics')
     @ApiOperation({ summary: 'Calculate and store analytics for products' })
-    @ApiQuery({ name: 'category', required: true, enum: ['all', 'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny', 'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky', 'grilovanie', 'alkohol'] })
+    @ApiQuery({ name: 'category', required: true, enum: ['all', 'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny', 'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky', 'grilovanie', 'alkohol', 'starostlivostODomacnost'] })
     @ApiResponse({ status: 200, description: 'Analytics calculated and stored successfully' })
     async calculateAnalytics(@Query('category') category: string) {
         if (category === 'all') {
-            const categories = ['trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny', 'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky', 'grilovanie', 'alkohol'];
+            const categories = ['trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny', 'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky', 'grilovanie', 'alkohol', 'starostlivostODomacnost'];
             for (const cat of categories) {
                 await this.service.calculateAndStoreAnalytics(cat);
             }

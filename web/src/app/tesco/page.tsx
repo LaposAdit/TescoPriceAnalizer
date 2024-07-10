@@ -195,7 +195,7 @@ const HomePage = () => {
 
     return (
         <>
-            <div className="container mx-auto px-4 py-8 ">
+            <div className="container mx-auto px-4 py-8">
                 <h1 className="text-4xl font-bold mb-8 text-center text-gray-800">Product Catalog</h1>
 
                 <div className="mb-8">
@@ -255,7 +255,7 @@ const HomePage = () => {
                 ) : error ? (
                     <p className="text-red-500 text-center">{error}</p>
                 ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-6">
                         {products && products.length > 0 ? products.map((product) => {
                             const promotion = product.promotions[0];
                             return (
@@ -278,7 +278,6 @@ const HomePage = () => {
                                                     <p className="text-green-600 text-xs mb-2 truncate">{promotion.offerText}</p>
                                                 )}
                                             </div>
-                                            <p className="text-blue-600 text-xs group-hover:underline mt-auto">View Details</p>
                                         </div>
                                     </div>
                                 </Link>

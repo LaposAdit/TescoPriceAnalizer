@@ -13,5 +13,6 @@ var ProductCategory;
     ProductCategory["MasoRybyALahodky"] = "masoRybyALahodky";
     ProductCategory["Grilovanie"] = "grilovanie";
     ProductCategory["Alkohol"] = "alkohol";
+    ProductCategory["StarostlivostODomacnost"] = "starostlivostODomacnost";
 })(ProductCategory || (exports.ProductCategory = ProductCategory = {}));
 //# sourceMappingURL=product-category.enum.js.map

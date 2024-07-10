@@ -55,7 +55,7 @@ let TescoController = class TescoController {
     }
     async calculateAnalytics(category) {
         if (category === 'all') {
-            const categories = ['trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny', 'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky', 'grilovanie', 'alkohol'];
+            const categories = ['trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny', 'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky', 'grilovanie', 'alkohol', 'starostlivostODomacnost'];
             for (const cat of categories) {
                 await this.service.calculateAndStoreAnalytics(cat);
             }
@@ -121,6 +121,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], TescoController.prototype, "getProductsAnalyticsFromDb", null);
 __decorate([
+    (0, common_1.Get)('search/analytics'),
     (0, swagger_1.ApiOperation)({ summary: 'Search products by name with analytics' }),
     (0, swagger_1.ApiQuery)({ name: 'searchTerm', required: true, description: 'Search term for product title' }),
     (0, swagger_1.ApiQuery)({ name: 'page', required: false, description: 'Page number', type: Number, example: 1 }),
@@ -139,7 +140,6 @@ __decorate([
     (0, swagger_1.ApiQuery)({ name: 'sortUpdatedAt', required: false, enum: ['asc', 'desc'], description: 'Sort by updatedAt' }),
     (0, swagger_1.ApiQuery)({ name: 'sortAveragePrice', required: false, enum: ['asc', 'desc'], description: 'Sort by averagePrice' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'List of products matching the search term with analytics' }),
-    (0, common_1.Get)('search/analytics'),
     __param(0, (0, common_1.Query)('searchTerm')),
     __param(1, (0, common_1.Query)('page')),
     __param(2, (0, common_1.Query)('pageSize')),
@@ -156,11 +156,11 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], TescoController.prototype, "searchProductsByNameWithAnalytics", null);
 __decorate([
+    (0, common_1.Get)('analytics/:productId'),
     (0, swagger_1.ApiOperation)({ summary: 'Get analytics data for a specific product' }),
     (0, swagger_1.ApiParam)({ name: 'productId', required: true, description: 'ID of the product' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Analytics data for the specified product' }),
     (0, swagger_1.ApiResponse)({ status: 404, description: 'Product analytics not found' }),
-    (0, common_1.Get)('analytics/:productId'),
     __param(0, (0, common_1.Param)('productId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -169,7 +169,7 @@ __decorate([
 __decorate([
     (0, common_1.Post)('calculate-analytics'),
     (0, swagger_1.ApiOperation)({ summary: 'Calculate and store analytics for products' }),
-    (0, swagger_1.ApiQuery)({ name: 'category', required: true, enum: ['all', 'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny', 'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky', 'grilovanie', 'alkohol'] }),
+    (0, swagger_1.ApiQuery)({ name: 'category', required: true, enum: ['all', 'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny', 'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky', 'grilovanie', 'alkohol', 'starostlivostODomacnost'] }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Analytics calculated and stored successfully' }),
     __param(0, (0, common_1.Query)('category')),
     __metadata("design:type", Function),

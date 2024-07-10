@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { GenericResponse } from 'src/dto/Tesco-ResponsDTO';
 
 @Injectable()
 export class TescoService {
@@ -74,6 +73,7 @@ export class TescoService {
             masoRybyALahodky: this.prisma.masoRybyALahodky,
             grilovanie: this.prisma.grilovanie,
             alkohol: this.prisma.alkohol,
+            starostlivostODomacnost: this.prisma.starostlivostODomacnost,
         };
 
         const model = modelMapping[category];
@@ -99,7 +99,7 @@ export class TescoService {
         const allCategories = [
             'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny',
             'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky',
-            'grilovanie', 'alkohol',
+            'grilovanie', 'alkohol', 'starostlivostODomacnost'
         ];
         const availableCategories: Set<string> = new Set(allCategories);
 
@@ -160,6 +160,7 @@ export class TescoService {
                 { model: 'masoRybyALahodky', category: 'masoRybyALahodky' },
                 { model: 'grilovanie', category: 'grilovanie' },
                 { model: 'alkohol', category: 'alkohol' },
+                { model: 'starostlivostODomacnost', category: 'starostlivostODomacnost' },
             ];
 
             const allProductsPromises = models.map(async ({ model, category }) => {
@@ -252,7 +253,7 @@ export class TescoService {
         const allCategories = [
             'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny',
             'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky',
-            'grilovanie', 'alkohol',
+            'grilovanie', 'alkohol', 'starostlivostODomacnost'
         ];
         const availableCategories: Set<string> = new Set(allCategories);
 
@@ -398,22 +399,6 @@ export class TescoService {
         const currentProduct = products[0];
         const isOnSale = currentProduct.hasPromotions;
 
-        if (products.length < 2) {
-            return {
-                priceDrop: 0,
-                priceIncrease: 0,
-                percentageChange: 0,
-                isBuyRecommended: isOnSale ? 'yes' : 'neutral',
-                isOnSale: isOnSale,
-                previousPrice: null,
-                priceChangeStatus: 'unknown',
-                averagePrice: null,
-                medianPrice: null,
-                priceStdDev: null,
-                promotionImpact: null
-            };
-        }
-
         const getEffectivePrice = (product: any): number => {
             if (product.promotions && product.promotions.length > 0 && product.promotions[0].promotionPrice != null) {
                 return product.promotions[0].promotionPrice;
@@ -423,6 +408,44 @@ export class TescoService {
 
         const currentBasePrice = currentProduct.price;
         const currentEffectivePrice = getEffectivePrice(currentProduct);
+
+        if (products.length < 2) {
+            // If there's no previous data but the product is on sale
+            if (isOnSale) {
+                const priceDifference = currentBasePrice - currentEffectivePrice;
+                const percentageChange = (priceDifference / currentBasePrice) * 100;
+
+                return {
+                    priceDrop: priceDifference > 0 ? parseFloat(priceDifference.toFixed(2)) : 0,
+                    priceIncrease: priceDifference < 0 ? parseFloat(Math.abs(priceDifference).toFixed(2)) : 0,
+                    percentageChange: parseFloat(percentageChange.toFixed(2)),
+                    isBuyRecommended: 'yes',
+                    isOnSale: true,
+                    previousPrice: currentBasePrice,
+                    priceChangeStatus: priceDifference > 0 ? 'decreased' : (priceDifference < 0 ? 'increased' : 'unchanged'),
+                    averagePrice: currentBasePrice,
+                    medianPrice: currentBasePrice,
+                    priceStdDev: 0,
+                    promotionImpact: parseFloat(priceDifference.toFixed(2))
+                };
+            }
+
+            // If not on sale and no previous data, return default values
+            return {
+                priceDrop: 0,
+                priceIncrease: 0,
+                percentageChange: 0,
+                isBuyRecommended: 'neutral',
+                isOnSale: false,
+                previousPrice: null,
+                priceChangeStatus: 'unknown',
+                averagePrice: null,
+                medianPrice: null,
+                priceStdDev: null,
+                promotionImpact: null
+            };
+        }
+
         const previousEffectivePrice = getEffectivePrice(products[1]);
 
         let priceDifference: number;
@@ -507,7 +530,7 @@ export class TescoService {
         const allCategories = [
             'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny',
             'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky',
-            'grilovanie', 'alkohol',
+            'grilovanie', 'alkohol', 'starostlivostODomacnost'
         ];
         const availableCategories: Set<string> = new Set(allCategories);
 
@@ -588,6 +611,7 @@ export class TescoService {
                 { model: 'masoRybyALahodky', category: 'masoRybyALahodky' },
                 { model: 'grilovanie', category: 'grilovanie' },
                 { model: 'alkohol', category: 'alkohol' },
+                { model: 'starostlivostODomacnost', category: 'starostlivostODomacnost' }
             ];
 
             const allProductsPromises = models.map(async ({ model, category }) => {
@@ -643,7 +667,7 @@ export class TescoService {
         const allCategories = [
             'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny',
             'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky',
-            'grilovanie', 'alkohol',
+            'grilovanie', 'alkohol', 'starostlivostODomacnost'
         ];
         const availableCategories: Set<string> = new Set(allCategories);
 

@@ -2,11 +2,11 @@
 import Link from "next/link";
 import React, { useState } from "react";
 import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
-import { ChevronDown, ChevronUp, Layout, Calendar, Settings, HelpCircle, DollarSign, Users, FileText, BarChart2, Briefcase, CreditCard, LucideIcon } from 'lucide-react';
+import { ChevronDown, ChevronRight, Layout, Star, TableProperties, ShoppingBasket, DollarSign, FileText, BarChart2, Briefcase, CreditCard, LucideIcon, Search, Menu } from 'lucide-react';
 
 interface OpenSections {
     main: boolean;
-    hr: boolean;
+    tescoFavorites: boolean;
     finance: boolean;
 }
 
@@ -15,7 +15,7 @@ type SectionName = keyof OpenSections;
 interface SidebarItemProps {
     icon: LucideIcon;
     text: string;
-    href?: string;
+    href: string;
 }
 
 interface SidebarSectionProps {
@@ -25,37 +25,39 @@ interface SidebarSectionProps {
     onToggle: () => void;
 }
 
+
 const NavbarAndSidebar: React.FC = () => {
     const [openSections, setOpenSections] = useState<OpenSections>({
         main: true,
-        hr: false,
-        finance: false,
+        tescoFavorites: true,
+        finance: true,
     });
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const toggleSection = (section: SectionName) => {
         setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
     };
 
-    const SidebarItem: React.FC<SidebarItemProps> = ({ icon: Icon, text, href = "#" }) => (
-        <Link href={href} className="flex items-center p-3 text-gray-700 rounded-lg hover:bg-indigo-50 group transition-colors duration-200">
-            <Icon className="w-6 h-6 text-black-500 transition duration-75 group-hover:text-black-600" />
-            <span className="ml-4 text-sm font-medium">{text}</span>
+    const SidebarItem: React.FC<SidebarItemProps> = ({ icon: Icon, text, href }) => (
+        <Link href={href} className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors duration-150 ease-in-out">
+            <Icon className="w-5 h-5 mr-3 text-gray-400" />
+            <span className="text-sm">{text}</span>
         </Link>
     );
 
     const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items, isOpen, onToggle }) => (
-        <div className="mb-4">
+        <div className="mb-2">
             <button
                 onClick={onToggle}
-                className="flex items-center justify-between w-full p-3 text-base font-semibold text-left text-gray-900 rounded-lg hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-colors duration-200"
+                className="flex items-center justify-between w-full px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-md transition-colors duration-150 ease-in-out"
             >
                 <span>{title}</span>
-                {isOpen ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
+                {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
             </button>
             {isOpen && (
-                <div className="mt-2 space-y-1 pl-6">
+                <div className="mt-1 ml-4 space-y-1">
                     {items.map((item, index) => (
-                        <SidebarItem key={index} icon={item.icon} text={item.text} href={item.href} />
+                        <SidebarItem key={index} {...item} />
                     ))}
                 </div>
             )}
@@ -64,111 +66,72 @@ const NavbarAndSidebar: React.FC = () => {
 
     return (
         <>
-            <nav className="bg-white border-b border-gray-200 px-4 py-2.5 dark:bg-gray-800 dark:border-gray-700 fixed left-0 right-0 top-0 z-50">
-                <div className="flex flex-wrap justify-between items-center">
-                    <div className="flex justify-start items-center">
-                        <button
-                            data-drawer-target="drawer-navigation"
-                            data-drawer-toggle="drawer-navigation"
-                            aria-controls="drawer-navigation"
-                            className="p-2 mr-2 text-gray-600 rounded-lg cursor-pointer md:hidden hover:text-gray-900 hover:bg-gray-100 focus:bg-gray-100 dark:focus:bg-gray-700 focus:ring-2 focus:ring-gray-100 dark:focus:ring-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
-                        >
-                            <svg
-                                aria-hidden="true"
-                                className="w-6 h-6"
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                                xmlns="http://www.w3.org/2000/svg"
+            <nav className="bg-white shadow-sm fixed left-0 right-0 top-0 z-50">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between items-center h-16">
+                        <div className="flex items-center">
+                            <button
+                                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                                className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 md:hidden"
                             >
-                                <path
-                                    fillRule="evenodd"
-                                    d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                                    clipRule="evenodd"
-                                ></path>
-                            </svg>
-                            <svg
-                                aria-hidden="true"
-                                className="hidden w-6 h-6"
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                                xmlns="http://www.w3.org/2000/svg"
-                            >
-                                <path
-                                    fillRule="evenodd"
-                                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                    clipRule="evenodd"
-                                ></path>
-                            </svg>
-                            <span className="sr-only">Toggle sidebar</span>
-                        </button>
-                        <a className="flex items-center justify-between mr-4">
-                            <span className="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">Cheap</span>
-                        </a>
-                        <form action="#" method="GET" className="hidden md:block md:pl-2">
-                            <label htmlFor="topbar-search" className="sr-only">Search</label>
-
-                        </form>
-                    </div>
-                    <div className="flex items-center lg:order-2">
-                        <div className="relative md:w-64 md:w-96 pr-8">
-                            <div className="flex absolute inset-y-0 left-0 items-center pl-3 pointer-events-none">
-                                <svg
-                                    className="w-5 h-5 text-gray-500 dark:text-gray-400"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        fillRule="evenodd"
-                                        clipRule="evenodd"
-                                        d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                                    ></path>
-                                </svg>
+                                <Menu className="h-6 w-6" />
+                            </button>
+                            <div className="flex-shrink-0 flex items-center ml-4 md:ml-0">
+                                <span className="text-2xl font-bold text-indigo-600">Cheap</span>
                             </div>
-                            <input
-                                type="text"
-                                name="email"
-                                id="topbar-search"
-                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                placeholder="Search"
-                            />
                         </div>
-                        <SignedIn>
-                            <UserButton />
-                        </SignedIn>
-                        <SignedOut>
-                            <SignInButton>
-                                <button className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors duration-200 text-sm font-medium">
-                                    Sign In
-                                </button>
-                            </SignInButton>
-                        </SignedOut>
+                        <div className="flex items-center">
+                            <div className="max-w-lg w-full lg:max-w-xs mr-4">
+                                <label htmlFor="search" className="sr-only">Search</label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Search className="h-5 w-5 text-gray-400" />
+                                    </div>
+                                    <input
+                                        id="search"
+                                        name="search"
+                                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                        placeholder="Search"
+                                        type="search"
+                                    />
+                                </div>
+                            </div>
+                            <SignedIn>
+                                <UserButton />
+                            </SignedIn>
+                            <SignedOut>
+                                <SignInButton>
+                                    <button className="ml-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors duration-200 text-sm font-medium">
+                                        Sign In
+                                    </button>
+                                </SignInButton>
+                            </SignedOut>
+                        </div>
                     </div>
                 </div>
             </nav>
 
-            <aside className="fixed top-[64px] left-0 z-40 w-64 h-[calc(100%-64px)] overflow-y-auto bg-white border-r border-gray-200 dark:bg-gray-800 dark:border-gray-700" aria-label="Sidenav" id="drawer-navigation">
-                <div className="h-full px-6 py-8">
-                    <nav className="space-y-6">
+            <aside className={`fixed top-16 left-0 z-40 w-64 h-[calc(100%-64px)] overflow-y-auto bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+                <div className="h-full px-3 py-4 overflow-y-auto">
+                    <nav className="space-y-1">
                         <SidebarSection
                             title="Main"
                             isOpen={openSections.main}
                             onToggle={() => toggleSection('main')}
                             items={[
-                                { icon: Layout, text: "Home" },
-                                { icon: Calendar, text: "Calendar" },
-                                { icon: Settings, text: "Settings" },
-                                { icon: HelpCircle, text: "Help Center" },
+                                { icon: Layout, text: "Home", href: "/" },
+                                { icon: ShoppingBasket, text: "Tesco", href: "/tesco" },
+                                { icon: TableProperties, text: "Tesco Analytics", href: "/tesco/table" },
                             ]}
                         />
                         <SidebarSection
-                            title="Human Resources"
-                            isOpen={openSections.hr}
-                            onToggle={() => toggleSection('hr')}
+                            title="Tesco Favorites"
+                            isOpen={openSections.tescoFavorites}
+                            onToggle={() => toggleSection('tescoFavorites')}
                             items={[
-                                { icon: Users, text: "Employees" },
-                                { icon: BarChart2, text: "Performance" },
-                                { icon: Briefcase, text: "Hiring" },
+                                { icon: Star, text: "Items", href: "/tesco/favorite" },
+                                { icon: BarChart2, text: "Analytics", href: "/tesco/favorite/analytics" },
+                                { icon: Briefcase, text: "Shop", href: "/hiring" },
                             ]}
                         />
                         <SidebarSection
@@ -176,9 +139,9 @@ const NavbarAndSidebar: React.FC = () => {
                             isOpen={openSections.finance}
                             onToggle={() => toggleSection('finance')}
                             items={[
-                                { icon: DollarSign, text: "PayRolls" },
-                                { icon: FileText, text: "Invoices" },
-                                { icon: CreditCard, text: "Expenses" },
+                                { icon: DollarSign, text: "PayRolls", href: "/payrolls" },
+                                { icon: FileText, text: "Invoices", href: "/invoices" },
+                                { icon: CreditCard, text: "Expenses", href: "/expenses" },
                             ]}
                         />
                     </nav>

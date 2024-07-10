@@ -9,4 +9,5 @@ export enum ProductCategory {
     MasoRybyALahodky = 'masoRybyALahodky',
     Grilovanie = 'grilovanie',
     Alkohol = 'alkohol',
+    StarostlivostODomacnost = 'starostlivostODomacnost',
 }

@@ -38,6 +38,7 @@ export class FavoriteService {
             [ProductCategory.MasoRybyALahodky]: this.prisma.masoRybyALahodky,
             [ProductCategory.Grilovanie]: this.prisma.grilovanie,
             [ProductCategory.Alkohol]: this.prisma.alkohol,
+            [ProductCategory.StarostlivostODomacnost]: this.prisma.starostlivostODomacnost,
         };
 
         return modelMapping[category];

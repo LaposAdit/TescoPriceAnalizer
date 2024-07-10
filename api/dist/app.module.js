@@ -36,14 +36,16 @@ const tesco_controller_1 = require("./tesco/tesco.controller");
 const tesco_service_1 = require("./tesco/tesco.service");
 const favorite_service_1 = require("./favorite/favorite.service");
 const favorite_controller_1 = require("./favorite/favorite.controller");
+const starostlivost_o_domacnost_service_1 = require("./starostlivost-o-domacnost/starostlivost-o-domacnost.service");
+const starostlivost_o_domacnost_controller_1 = require("./starostlivost-o-domacnost/starostlivost-o-domacnost.controller");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [axios_1.HttpModule],
-        controllers: [app_controller_1.AppController, ovocie_a_zeleniny_controller_1.OvocieAZeleninyController, grilovanie_controller_1.GrilovanieController, mliecne_vyrobky_a_vajcia_controller_1.MliecneVyrobkyAVajciaController, pecivo_controller_1.PecivoController, maso_ryby_a_lahodky_controller_1.MasoRybyALahodkyController, trvanlive_potraviny_controller_1.TrvanlivePotravinyController, specialna_a_zdrava_vyziva_controller_1.SpecialnaAZdravaVyzivaController, mrazene_potraviny_controller_1.MrazenePotravinyController, napoje_controller_1.NapojeController, alkohol_controller_1.AlkoholController, tesco_controller_1.TescoController, favorite_controller_1.FavoriteController],
-        providers: [app_service_1.AppService, ovocie_a_zeleniny_service_1.OvocieAZeleninyService, grilovanie_service_1.GrilovanieService, prisma_service_1.PrismaService, mliecne_vyrobky_a_vajcia_service_1.MliecneVyrobkyAVajciaService, pecivo_service_1.PecivoService, maso_ryby_a_lahodky_service_1.MasoRybyALahodkyService, trvanlive_potraviny_service_1.TrvanlivePotravinyService, specialna_a_zdrava_vyziva_service_1.SpecialnaAZdravaVyzivaService, mrazene_potraviny_service_1.MrazenePotravinyService, napoje_service_1.NapojeService, alkohol_service_1.AlkoholService, tesco_service_1.TescoService, favorite_service_1.FavoriteService],
+        controllers: [app_controller_1.AppController, ovocie_a_zeleniny_controller_1.OvocieAZeleninyController, grilovanie_controller_1.GrilovanieController, mliecne_vyrobky_a_vajcia_controller_1.MliecneVyrobkyAVajciaController, pecivo_controller_1.PecivoController, maso_ryby_a_lahodky_controller_1.MasoRybyALahodkyController, trvanlive_potraviny_controller_1.TrvanlivePotravinyController, specialna_a_zdrava_vyziva_controller_1.SpecialnaAZdravaVyzivaController, mrazene_potraviny_controller_1.MrazenePotravinyController, napoje_controller_1.NapojeController, alkohol_controller_1.AlkoholController, tesco_controller_1.TescoController, favorite_controller_1.FavoriteController, starostlivost_o_domacnost_controller_1.StarostlivostODomacnostController],
+        providers: [app_service_1.AppService, ovocie_a_zeleniny_service_1.OvocieAZeleninyService, grilovanie_service_1.GrilovanieService, prisma_service_1.PrismaService, mliecne_vyrobky_a_vajcia_service_1.MliecneVyrobkyAVajciaService, pecivo_service_1.PecivoService, maso_ryby_a_lahodky_service_1.MasoRybyALahodkyService, trvanlive_potraviny_service_1.TrvanlivePotravinyService, specialna_a_zdrava_vyziva_service_1.SpecialnaAZdravaVyzivaService, mrazene_potraviny_service_1.MrazenePotravinyService, napoje_service_1.NapojeService, alkohol_service_1.AlkoholService, tesco_service_1.TescoService, favorite_service_1.FavoriteService, starostlivost_o_domacnost_service_1.StarostlivostODomacnostService],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

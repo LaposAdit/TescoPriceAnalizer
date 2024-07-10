@@ -5,7 +5,7 @@ import ProductPriceChart from "../utils/ProductPriceChart";
 import HistoryTable from "../utils/HistoryTable";
 import { useUser } from '@clerk/clerk-react';
 import Header from "@/app/compoments/navbar";
-import { Heart, TrendingUp, TrendingDown, DollarSign, ShoppingCart, Tag } from 'lucide-react';
+import { Heart, TrendingUp, TrendingDown, DollarSign, ShoppingCart, Tag, Percent} from 'lucide-react';
 
 interface Promotion {
     promotionId: string;
@@ -60,13 +60,42 @@ interface PageProps {
     };
 }
 
+const categoryMap: { [key: string]: string } = {
+    trvanlivePotraviny: 'Trvanlivé Potraviny',
+    specialnaAZdravaVyziva: 'Špeciálna a Zdravá Výživa',
+    pecivo: 'Pečivo',
+    ovocieAZeleniny: 'Ovocie a Zeleniny',
+    napoje: 'Nápoje',
+    mrazenePotraviny: 'Mrazené Potraviny',
+    mliecneVyrobkyAVajcia: 'Mliečne Výrobky a Vajcia',
+    masoRybyALahodky: 'Mäso, Ryby a Lahôdky',
+    grilovanie: 'Grilovanie',
+    alkohol: 'Alkohol'
+};
+
 export default function Page({ params, searchParams }: PageProps) {
     const [product, setProduct] = useState<ProductDetail | null>(null);
     const [history, setHistory] = useState<ProductDetail[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+    const [isFavorite, setIsFavorite] = useState<boolean>(false);
     const { user } = useUser();
+
+    const fetchFavoriteStatus = async () => {
+        if (!user || !product) return;
+
+        try {
+            const response = await axios.get<boolean>(`http://localhost:3000/favorites/isFavorite?userId=${user.id}&productId=${product.productId}`, {
+                headers: {
+                    'accept': '*/*'
+                }
+            });
+            setIsFavorite(response.data);
+        } catch (err) {
+            console.error('Error checking favorite status:', err);
+        }
+    };
 
     const addToFavorites = async () => {
         if (!user) {
@@ -86,8 +115,29 @@ export default function Page({ params, searchParams }: PageProps) {
             });
 
             console.log('Added to favorites:', response.data);
+            setIsFavorite(true);
         } catch (err) {
             console.error('Error adding to favorites:', err);
+        }
+    };
+
+    const removeFromFavorites = async () => {
+        if (!user || !product) {
+            console.error("User not logged in or product not loaded");
+            return;
+        }
+
+        try {
+            const response = await axios.delete(`http://localhost:3000/favorites?userId=${user.id}&productId=${product.productId}`, {
+                headers: {
+                    'accept': '*/*'
+                }
+            });
+
+            console.log('Removed from favorites:', response.data);
+            setIsFavorite(false);
+        } catch (err) {
+            console.error('Error removing from favorites:', err);
         }
     };
 
@@ -130,6 +180,10 @@ export default function Page({ params, searchParams }: PageProps) {
 
         fetchProductDetail();
     }, [params.productId, searchParams.category]);
+
+    useEffect(() => {
+        fetchFavoriteStatus();
+    }, [product]);
 
     // Preprocess the history data to consolidate prices by date
     const consolidatedHistory = history.reduce((acc, item) => {
@@ -176,17 +230,40 @@ export default function Page({ params, searchParams }: PageProps) {
                                     </div>
                                     <div className="md:w-2/3 md:pl-8">
                                         <div className="flex items-center justify-between mb-4">
-                                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                                                <Tag size={16} className="mr-1" />
-                                                {product.category}
-                                            </span>
-                                            <button
-                                                onClick={addToFavorites}
-                                                className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-full text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                                            >
-                                                <Heart size={16} className="mr-1" />
-                                                Add to Favorites
-                                            </button>
+                                            <div className="flex space-x-2">
+                                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                                    <Tag size={16} className="mr-1" />
+                                                    {categoryMap[product.category] || product.category}
+                                                </span>
+                                                {product.hasPromotions ? (
+                                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                                        <Percent size={16} className="mr-1" />
+                                                        On Sale
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                                                        <DollarSign size={16} className="mr-1" />
+                                                        Regular Price
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {isFavorite ? (
+                                                <button
+                                                    onClick={removeFromFavorites}
+                                                    className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-full text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                                >
+                                                    <Heart size={16} className="mr-1" />
+                                                    Remove from Favorites
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={addToFavorites}
+                                                    className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-full text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                                >
+                                                    <Heart size={16} className="mr-1" />
+                                                    Add to Favorites
+                                                </button>
+                                            )}
                                         </div>
                                         <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.title}</h1>
                                         <div className="mb-6">
@@ -200,6 +277,19 @@ export default function Page({ params, searchParams }: PageProps) {
                                                         <span className="text-xl text-gray-500 line-through">€{product.price.toFixed(2)}</span>
                                                         <span className="ml-2 text-sm text-green-600 font-semibold">
                                                             Save €{(product.price - product.promotions[0].promotionPrice).toFixed(2)}
+                                                        </span>
+                                                    </div>
+                                                </>
+                                            ) : analytics && analytics.priceChangeStatus === 'increased' ? (
+                                                <>
+                                                    <div className="flex items-center">
+                                                        <span className="text-4xl font-bold text-indigo-600">€{product.price.toFixed(2)}</span>
+                                                        <span className="ml-2 text-lg text-gray-600">per {product.unitOfMeasure}</span>
+                                                    </div>
+                                                    <div className="mt-2 flex items-center">
+                                                        <span className="text-xl text-gray-500 line-through">€{analytics.previousPrice.toFixed(2)}</span>
+                                                        <span className="ml-2 text-sm text-red-600 font-semibold">
+                                                            Increased by €{(product.price - analytics.previousPrice).toFixed(2)}
                                                         </span>
                                                     </div>
                                                 </>

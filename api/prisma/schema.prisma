@@ -34,16 +34,17 @@ model ProductAnalytics {
   updatedAt         DateTime @updatedAt // New field for record update timestamp
 
   // Relations to all product models (now one-to-many)
-  ovocieAZeleniny        OvocieAZeleniny[]
-  grilovanie             Grilovanie[]
-  pecivo                 Pecivo[]
-  masoRybyALahodky       MasoRybyALahodky[]
-  mliecneVyrobkyAVajcia  MliecneVyrobkyAVajcia[]
-  trvanlivePotraviny     TrvanlivePotraviny[]
-  specialnaAZdravaVyziva SpecialnaAZdravaVyziva[]
-  mrazenePotraviny       MrazenePotraviny[]
-  napoje                 Napoje[]
-  alkohol                Alkohol[]
+  ovocieAZeleniny         OvocieAZeleniny[]
+  grilovanie              Grilovanie[]
+  pecivo                  Pecivo[]
+  masoRybyALahodky        MasoRybyALahodky[]
+  mliecneVyrobkyAVajcia   MliecneVyrobkyAVajcia[]
+  trvanlivePotraviny      TrvanlivePotraviny[]
+  specialnaAZdravaVyziva  SpecialnaAZdravaVyziva[]
+  mrazenePotraviny        MrazenePotraviny[]
+  napoje                  Napoje[]
+  alkohol                 Alkohol[]
+  starostlivostODomacnost StarostlivostODomacnost[]
 
   @@unique([productId, lastCalculated])
 }
@@ -70,6 +71,27 @@ model OvocieAZeleniny {
 }
 
 model Grilovanie {
+  id                  Int               @id @default(autoincrement())
+  productId           String
+  title               String
+  price               Float
+  unitPrice           Float
+  imageUrl            String
+  unitOfMeasure       String
+  isForSale           Boolean
+  aisleName           String
+  promotions          Promotion[]
+  lastUpdated         DateTime
+  category            String
+  superDepartmentName String
+  hasPromotions       Boolean
+  ProductAnalytics    ProductAnalytics? @relation(fields: [productAnalyticsId], references: [id])
+  productAnalyticsId  Int?
+
+  @@unique([productId, lastUpdated])
+}
+
+model StarostlivostODomacnost {
   id                  Int               @id @default(autoincrement())
   productId           String
   title               String
@@ -259,32 +281,34 @@ model Alkohol {
 }
 
 model Promotion {
-  id                       Int                     @id @default(autoincrement())
-  promotionId              String
-  promotionType            String
-  startDate                DateTime
-  endDate                  DateTime
-  offerText                String
-  promotionPrice           Float? // Add this line
-  attributes               String[]
-  ovocieAZeleniny          OvocieAZeleniny?        @relation(fields: [ovocieAZeleninyId], references: [id])
-  ovocieAZeleninyId        Int?
-  grilovanie               Grilovanie?             @relation(fields: [grilovanieId], references: [id])
-  grilovanieId             Int?
-  mliecneVyrobkyAVajcia    MliecneVyrobkyAVajcia?  @relation(fields: [mliecneVyrobkyAVajciaId], references: [id])
-  mliecneVyrobkyAVajciaId  Int?
-  pecivo                   Pecivo?                 @relation(fields: [pecivoId], references: [id])
-  pecivoId                 Int?
-  masoRybyALahodky         MasoRybyALahodky?       @relation(fields: [masoRybyALahodkyId], references: [id])
-  masoRybyALahodkyId       Int?
-  trvanlivePotraviny       TrvanlivePotraviny?     @relation(fields: [trvanlivePotravinyId], references: [id])
-  trvanlivePotravinyId     Int?
-  specialnaAZdravaVyziva   SpecialnaAZdravaVyziva? @relation(fields: [specialnaAZdravaVyzivaId], references: [id])
-  specialnaAZdravaVyzivaId Int?
-  mrazenePotraviny         MrazenePotraviny?       @relation(fields: [mrazenePotravinyId], references: [id])
-  mrazenePotravinyId       Int?
-  napoje                   Napoje?                 @relation(fields: [napojeId], references: [id])
-  napojeId                 Int?
-  alkohol                  Alkohol?                @relation(fields: [alkoholId], references: [id])
-  alkoholId                Int?
+  id                        Int                      @id @default(autoincrement())
+  promotionId               String
+  promotionType             String
+  startDate                 DateTime
+  endDate                   DateTime
+  offerText                 String
+  promotionPrice            Float? // Add this line
+  attributes                String[]
+  ovocieAZeleniny           OvocieAZeleniny?         @relation(fields: [ovocieAZeleninyId], references: [id])
+  ovocieAZeleninyId         Int?
+  grilovanie                Grilovanie?              @relation(fields: [grilovanieId], references: [id])
+  grilovanieId              Int?
+  mliecneVyrobkyAVajcia     MliecneVyrobkyAVajcia?   @relation(fields: [mliecneVyrobkyAVajciaId], references: [id])
+  mliecneVyrobkyAVajciaId   Int?
+  pecivo                    Pecivo?                  @relation(fields: [pecivoId], references: [id])
+  pecivoId                  Int?
+  masoRybyALahodky          MasoRybyALahodky?        @relation(fields: [masoRybyALahodkyId], references: [id])
+  masoRybyALahodkyId        Int?
+  trvanlivePotraviny        TrvanlivePotraviny?      @relation(fields: [trvanlivePotravinyId], references: [id])
+  trvanlivePotravinyId      Int?
+  specialnaAZdravaVyziva    SpecialnaAZdravaVyziva?  @relation(fields: [specialnaAZdravaVyzivaId], references: [id])
+  specialnaAZdravaVyzivaId  Int?
+  mrazenePotraviny          MrazenePotraviny?        @relation(fields: [mrazenePotravinyId], references: [id])
+  mrazenePotravinyId        Int?
+  napoje                    Napoje?                  @relation(fields: [napojeId], references: [id])
+  napojeId                  Int?
+  alkohol                   Alkohol?                 @relation(fields: [alkoholId], references: [id])
+  alkoholId                 Int?
+  starostlivostODomacnost   StarostlivostODomacnost? @relation(fields: [starostlivostODomacnostId], references: [id])
+  starostlivostODomacnostId Int?
 }

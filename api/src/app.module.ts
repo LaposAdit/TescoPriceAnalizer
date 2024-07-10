@@ -27,10 +27,12 @@ import { TescoController } from './tesco/tesco.controller';
 import { TescoService } from './tesco/tesco.service';
 import { FavoriteService } from './favorite/favorite.service';
 import { FavoriteController } from './favorite/favorite.controller';
+import { StarostlivostODomacnostService } from './starostlivost-o-domacnost/starostlivost-o-domacnost.service';
+import { StarostlivostODomacnostController } from './starostlivost-o-domacnost/starostlivost-o-domacnost.controller';
 
 @Module({
   imports: [HttpModule],
-  controllers: [AppController, OvocieAZeleninyController, GrilovanieController, MliecneVyrobkyAVajciaController, PecivoController, MasoRybyALahodkyController, TrvanlivePotravinyController, SpecialnaAZdravaVyzivaController, MrazenePotravinyController, NapojeController, AlkoholController, TescoController, FavoriteController],
-  providers: [AppService, OvocieAZeleninyService, GrilovanieService, PrismaService, MliecneVyrobkyAVajciaService, PecivoService, MasoRybyALahodkyService, TrvanlivePotravinyService, SpecialnaAZdravaVyzivaService, MrazenePotravinyService, NapojeService, AlkoholService, TescoService, FavoriteService],
+  controllers: [AppController, OvocieAZeleninyController, GrilovanieController, MliecneVyrobkyAVajciaController, PecivoController, MasoRybyALahodkyController, TrvanlivePotravinyController, SpecialnaAZdravaVyzivaController, MrazenePotravinyController, NapojeController, AlkoholController, TescoController, FavoriteController, StarostlivostODomacnostController],
+  providers: [AppService, OvocieAZeleninyService, GrilovanieService, PrismaService, MliecneVyrobkyAVajciaService, PecivoService, MasoRybyALahodkyService, TrvanlivePotravinyService, SpecialnaAZdravaVyzivaService, MrazenePotravinyService, NapojeService, AlkoholService, TescoService, FavoriteService, StarostlivostODomacnostService],
 })
 export class AppModule { }
