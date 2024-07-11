@@ -47,6 +47,7 @@ let FavoriteService = class FavoriteService {
             [product_category_enum_1.ProductCategory.Grilovanie]: this.prisma.grilovanie,
             [product_category_enum_1.ProductCategory.Alkohol]: this.prisma.alkohol,
             [product_category_enum_1.ProductCategory.StarostlivostODomacnost]: this.prisma.starostlivostODomacnost,
+            [product_category_enum_1.ProductCategory.ZdravieAKrasa]: this.prisma.zdravieAKrasa,
         };
         return modelMapping[category];
     }

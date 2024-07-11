@@ -74,6 +74,7 @@ export class TescoService {
             grilovanie: this.prisma.grilovanie,
             alkohol: this.prisma.alkohol,
             starostlivostODomacnost: this.prisma.starostlivostODomacnost,
+            zdravieAKrasa: this.prisma.zdravieAKrasa,
         };
 
         const model = modelMapping[category];
@@ -99,7 +100,7 @@ export class TescoService {
         const allCategories = [
             'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny',
             'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky',
-            'grilovanie', 'alkohol', 'starostlivostODomacnost'
+            'grilovanie', 'alkohol', 'starostlivostODomacnost', 'zdravieAKrasa',
         ];
         const availableCategories: Set<string> = new Set(allCategories);
 
@@ -161,6 +162,7 @@ export class TescoService {
                 { model: 'grilovanie', category: 'grilovanie' },
                 { model: 'alkohol', category: 'alkohol' },
                 { model: 'starostlivostODomacnost', category: 'starostlivostODomacnost' },
+                { model: 'zdravieAKrasa', category: 'zdravieAKrasa' }
             ];
 
             const allProductsPromises = models.map(async ({ model, category }) => {
@@ -253,7 +255,7 @@ export class TescoService {
         const allCategories = [
             'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny',
             'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky',
-            'grilovanie', 'alkohol', 'starostlivostODomacnost'
+            'grilovanie', 'alkohol', 'starostlivostODomacnost', 'zdravieAKrasa',
         ];
         const availableCategories: Set<string> = new Set(allCategories);
 
@@ -530,7 +532,7 @@ export class TescoService {
         const allCategories = [
             'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny',
             'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky',
-            'grilovanie', 'alkohol', 'starostlivostODomacnost'
+            'grilovanie', 'alkohol', 'starostlivostODomacnost', 'zdravieAKrasa',
         ];
         const availableCategories: Set<string> = new Set(allCategories);
 
@@ -611,7 +613,8 @@ export class TescoService {
                 { model: 'masoRybyALahodky', category: 'masoRybyALahodky' },
                 { model: 'grilovanie', category: 'grilovanie' },
                 { model: 'alkohol', category: 'alkohol' },
-                { model: 'starostlivostODomacnost', category: 'starostlivostODomacnost' }
+                { model: 'starostlivostODomacnost', category: 'starostlivostODomacnost' },
+                { model: 'zdravieAKrasa', category: 'zdravieAKrasa' }
             ];
 
             const allProductsPromises = models.map(async ({ model, category }) => {
@@ -667,7 +670,7 @@ export class TescoService {
         const allCategories = [
             'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny',
             'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky',
-            'grilovanie', 'alkohol', 'starostlivostODomacnost'
+            'grilovanie', 'alkohol', 'starostlivostODomacnost', 'zdravieAKrasa',
         ];
         const availableCategories: Set<string> = new Set(allCategories);
 

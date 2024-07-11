@@ -55,7 +55,7 @@ let TescoController = class TescoController {
     }
     async calculateAnalytics(category) {
         if (category === 'all') {
-            const categories = ['trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny', 'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky', 'grilovanie', 'alkohol', 'starostlivostODomacnost'];
+            const categories = ['trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny', 'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky', 'grilovanie', 'alkohol', 'starostlivostODomacnost', 'zdravieAKrasa'];
             for (const cat of categories) {
                 await this.service.calculateAndStoreAnalytics(cat);
             }
@@ -169,7 +169,7 @@ __decorate([
 __decorate([
     (0, common_1.Post)('calculate-analytics'),
     (0, swagger_1.ApiOperation)({ summary: 'Calculate and store analytics for products' }),
-    (0, swagger_1.ApiQuery)({ name: 'category', required: true, enum: ['all', 'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny', 'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky', 'grilovanie', 'alkohol', 'starostlivostODomacnost'] }),
+    (0, swagger_1.ApiQuery)({ name: 'category', required: true, enum: ['all', 'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny', 'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky', 'grilovanie', 'alkohol', 'starostlivostODomacnost', 'zdravieAKrasa'] }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Analytics calculated and stored successfully' }),
     __param(0, (0, common_1.Query)('category')),
     __metadata("design:type", Function),

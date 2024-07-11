@@ -1,6 +1,5 @@
 import { Controller, Post, Delete, Get, Param, Body, Query } from '@nestjs/common';
 import { FavoriteService } from './favorite.service';
-import { ProductCategory } from '../enum/product-category.enum';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CreateFavoriteDto } from 'src/dto/create-favorite.dto';
 

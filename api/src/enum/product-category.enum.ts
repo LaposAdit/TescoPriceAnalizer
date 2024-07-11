@@ -10,4 +10,5 @@ export enum ProductCategory {
     Grilovanie = 'grilovanie',
     Alkohol = 'alkohol',
     StarostlivostODomacnost = 'starostlivostODomacnost',
+    ZdravieAKrasa = 'zdravieAKrasa',
 }

@@ -1,0 +1,30 @@
+import { TrvanlivePotravinyService } from '../trvanlive-potraviny/trvanlive-potraviny.service';
+import { StarostlivostODomacnostService } from 'src/starostlivost-o-domacnost/starostlivost-o-domacnost.service';
+import { PecivoService } from 'src/pecivo/pecivo.service';
+import { OvocieAZeleninyService } from 'src/ovocie-a-zeleniny/ovocie-a-zeleniny.service';
+import { MrazenePotravinyService } from 'src/mrazene-potraviny/mrazene-potraviny.service';
+import { ZdravieAKrasaService } from 'src/zdravie-a-krasa/zdravie-a-krasa.service';
+import { GrilovanieService } from 'src/grilovanie/grilovanie.service';
+import { AlkoholService } from 'src/alkohol/alkohol.service';
+import { MliecneVyrobkyAVajciaService } from 'src/mliecne-vyrobky-a-vajcia/mliecne-vyrobky-a-vajcia.service';
+import { MasoRybyALahodkyService } from 'src/maso-ryby-a-lahodky/maso-ryby-a-lahodky.service';
+import { SpecialnaAZdravaVyzivaService } from 'src/specialna-a-zdrava-vyziva/specialna-a-zdrava-vyziva.service';
+import { NapojeService } from 'src/napoje/napoje.service';
+export declare class UpdateService {
+    private readonly trvanlivePotravinyService;
+    private readonly starostlivostODomacnostService;
+    private readonly pecivoService;
+    private readonly ovocieAZeleninyService;
+    private readonly mrazenePotravinyService;
+    private readonly zdravieAKrasaService;
+    private readonly grilovanieService;
+    private readonly alkoholService;
+    private readonly mliecneVyrobkyAVajciaService;
+    private readonly masoRybyALahodkyService;
+    private readonly specialnaAZdravaVyzivaService;
+    private readonly napoje;
+    private readonly logger;
+    constructor(trvanlivePotravinyService: TrvanlivePotravinyService, starostlivostODomacnostService: StarostlivostODomacnostService, pecivoService: PecivoService, ovocieAZeleninyService: OvocieAZeleninyService, mrazenePotravinyService: MrazenePotravinyService, zdravieAKrasaService: ZdravieAKrasaService, grilovanieService: GrilovanieService, alkoholService: AlkoholService, mliecneVyrobkyAVajciaService: MliecneVyrobkyAVajciaService, masoRybyALahodkyService: MasoRybyALahodkyService, specialnaAZdravaVyzivaService: SpecialnaAZdravaVyzivaService, napoje: NapojeService);
+    updateAllCategories(): Promise<void>;
+    private updateCategory;
+}

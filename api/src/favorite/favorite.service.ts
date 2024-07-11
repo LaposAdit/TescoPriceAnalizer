@@ -39,6 +39,7 @@ export class FavoriteService {
             [ProductCategory.Grilovanie]: this.prisma.grilovanie,
             [ProductCategory.Alkohol]: this.prisma.alkohol,
             [ProductCategory.StarostlivostODomacnost]: this.prisma.starostlivostODomacnost,
+            [ProductCategory.ZdravieAKrasa]: this.prisma.zdravieAKrasa,
         };
 
         return modelMapping[category];

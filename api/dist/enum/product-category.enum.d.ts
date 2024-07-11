@@ -9,5 +9,6 @@ export declare enum ProductCategory {
     MasoRybyALahodky = "masoRybyALahodky",
     Grilovanie = "grilovanie",
     Alkohol = "alkohol",
-    StarostlivostODomacnost = "starostlivostODomacnost"
+    StarostlivostODomacnost = "starostlivostODomacnost",
+    ZdravieAKrasa = "zdravieAKrasa"
 }

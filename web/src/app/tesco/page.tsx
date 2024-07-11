@@ -5,7 +5,7 @@ import axios from 'axios';
 import Link from 'next/link';
 import { GlobalAPI_IP } from '../compoments/global';
 import React from 'react';
-import Header from '../compoments/navbar';
+import { Star, TrendingUp, TrendingDown, BarChart2, Tag } from 'lucide-react';
 
 interface Promotion {
     promotionId: string;
@@ -50,7 +50,9 @@ const categoryMap: { [key: string]: string } = {
     mliecneVyrobkyAVajcia: 'Mliečne Výrobky a Vajcia',
     masoRybyALahodky: 'Mäso, Ryby a Lahôdky',
     grilovanie: 'Grilovanie',
-    alkohol: 'Alkohol'
+    alkohol: 'Alkohol',
+    starostlivostODomacnost: 'Starostlivosť o Domácnosť',
+    zdravieAKrasa: 'Zdravie a Krása',
 };
 
 const HomePage = () => {
@@ -148,6 +150,7 @@ const HomePage = () => {
 
     const handlePageChange = (newPage: number) => {
         setPage(newPage);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleCategoryChange = (newCategory: string) => {
@@ -195,7 +198,7 @@ const HomePage = () => {
 
     return (
         <>
-            <div className="container mx-auto px-4 py-8">
+            <div className="container mx-auto px-4 py-8 ">
                 <h1 className="text-4xl font-bold mb-8 text-center text-gray-800">Product Catalog</h1>
 
                 <div className="mb-8">
@@ -249,13 +252,13 @@ const HomePage = () => {
                 </div>
 
                 {loading ? (
-                    <div className="flex justify-center items-center h-64">
+                    <div className="flex justify-center items-center min-h-screen h-64">
                         <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
                     </div>
                 ) : error ? (
                     <p className="text-red-500 text-center">{error}</p>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-6 ">
                         {products && products.length > 0 ? products.map((product) => {
                             const promotion = product.promotions[0];
                             return (
@@ -290,10 +293,11 @@ const HomePage = () => {
 
 
                 <div className="mt-8 flex justify-center">
-                    <nav className="inline-flex rounded-md shadow-sm">
+                    <nav className="inline-flex rounded-lg shadow-sm bg-white border border-gray-300">
                         <button
                             onClick={() => handlePageChange(Math.max(page - 1, 1))}
-                            className={`px-4 py-2 rounded-l-md text-sm font-medium ${page === 1 ? 'text-gray-300 bg-gray-100 cursor-not-allowed' : 'text-gray-700 bg-white hover:bg-gray-50'}`}
+                            className={`px-4 py-2 text-sm font-medium rounded-l-lg transition-colors duration-200 ${page === 1 ? 'text-gray-300 bg-gray-100 cursor-not-allowed' : 'text-gray-700 bg-white hover:bg-gray-50'
+                                }`}
                             disabled={page === 1}
                         >
                             Previous
@@ -303,14 +307,16 @@ const HomePage = () => {
                                 key={index}
                                 onClick={() => handlePageChange(pageNumber === '...' ? page + 1 : Number(pageNumber))}
                                 disabled={pageNumber === '...'}
-                                className={`px-4 py-2 text-sm font-medium ${pageNumber === page ? 'text-blue-600 bg-blue-50' : pageNumber === '...' ? 'text-gray-700 bg-white cursor-default' : 'text-gray-700 bg-white hover:bg-gray-50'}`}
+                                className={`px-4 py-2 text-sm font-medium transition-colors duration-200 ${pageNumber === page ? 'text-white bg-blue-600' : pageNumber === '...' ? 'text-gray-700 bg-white cursor-default' : 'text-gray-700 bg-white hover:bg-gray-50'
+                                    } ${pageNumber === page ? 'rounded-lg' : ''}`}
                             >
                                 {pageNumber}
                             </button>
                         ))}
                         <button
                             onClick={() => handlePageChange(Math.min(page + 1, totalPages))}
-                            className={`px-4 py-2 rounded-r-md text-sm font-medium ${page === totalPages ? 'text-gray-300 bg-gray-100 cursor-not-allowed' : 'text-gray-700 bg-white hover:bg-gray-50'}`}
+                            className={`px-4 py-2 text-sm font-medium rounded-r-lg transition-colors duration-200 ${page === totalPages ? 'text-gray-300 bg-gray-100 cursor-not-allowed' : 'text-gray-700 bg-white hover:bg-gray-50'
+                                }`}
                             disabled={page === totalPages}
                         >
                             Next

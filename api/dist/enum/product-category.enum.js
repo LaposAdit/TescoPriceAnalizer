@@ -14,5 +14,6 @@ var ProductCategory;
     ProductCategory["Grilovanie"] = "grilovanie";
     ProductCategory["Alkohol"] = "alkohol";
     ProductCategory["StarostlivostODomacnost"] = "starostlivostODomacnost";
+    ProductCategory["ZdravieAKrasa"] = "zdravieAKrasa";
 })(ProductCategory || (exports.ProductCategory = ProductCategory = {}));
 //# sourceMappingURL=product-category.enum.js.map

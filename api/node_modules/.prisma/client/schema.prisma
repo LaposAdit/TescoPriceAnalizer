@@ -45,12 +45,13 @@ model ProductAnalytics {
   napoje                  Napoje[]
   alkohol                 Alkohol[]
   starostlivostODomacnost StarostlivostODomacnost[]
+  zdravieAKrasa           ZdravieAKrasa[]
 
   @@unique([productId, lastCalculated])
 }
 
-model OvocieAZeleniny {
-  id                  Int               @id @default(autoincrement())
+model ZdravieAKrasa {
+  id                  Int                @id @default(autoincrement())
   productId           String
   title               String
   price               Float
@@ -65,13 +66,38 @@ model OvocieAZeleniny {
   superDepartmentName String
   hasPromotions       Boolean
   analyticsId         Int?
-  analytics           ProductAnalytics? @relation(fields: [analyticsId], references: [id])
+  ProductAnalytics    ProductAnalytics?  @relation(fields: [productAnalyticsId], references: [id])
+  productAnalyticsId  Int?
+  ShoppingListItem    ShoppingListItem[]
+
+  @@unique([productId, lastUpdated])
+}
+
+model OvocieAZeleniny {
+  id                  Int                @id @default(autoincrement())
+  productId           String
+  title               String
+  price               Float
+  unitPrice           Float
+  imageUrl            String
+  unitOfMeasure       String
+  isForSale           Boolean
+  aisleName           String
+  promotions          Promotion[]
+  lastUpdated         DateTime
+  category            String
+  superDepartmentName String
+  hasPromotions       Boolean
+  analyticsId         Int?
+  ProductAnalytics    ProductAnalytics?  @relation(fields: [productAnalyticsId], references: [id])
+  productAnalyticsId  Int?
+  ShoppingListItem    ShoppingListItem[]
 
   @@unique([productId, lastUpdated])
 }
 
 model Grilovanie {
-  id                  Int               @id @default(autoincrement())
+  id                  Int                @id @default(autoincrement())
   productId           String
   title               String
   price               Float
@@ -85,14 +111,15 @@ model Grilovanie {
   category            String
   superDepartmentName String
   hasPromotions       Boolean
-  ProductAnalytics    ProductAnalytics? @relation(fields: [productAnalyticsId], references: [id])
+  ProductAnalytics    ProductAnalytics?  @relation(fields: [productAnalyticsId], references: [id])
   productAnalyticsId  Int?
+  ShoppingListItem    ShoppingListItem[]
 
   @@unique([productId, lastUpdated])
 }
 
 model StarostlivostODomacnost {
-  id                  Int               @id @default(autoincrement())
+  id                  Int                @id @default(autoincrement())
   productId           String
   title               String
   price               Float
@@ -106,14 +133,15 @@ model StarostlivostODomacnost {
   category            String
   superDepartmentName String
   hasPromotions       Boolean
-  ProductAnalytics    ProductAnalytics? @relation(fields: [productAnalyticsId], references: [id])
+  ProductAnalytics    ProductAnalytics?  @relation(fields: [productAnalyticsId], references: [id])
   productAnalyticsId  Int?
+  ShoppingListItem    ShoppingListItem[]
 
   @@unique([productId, lastUpdated])
 }
 
 model Pecivo {
-  id                  Int               @id @default(autoincrement())
+  id                  Int                @id @default(autoincrement())
   productId           String
   title               String
   price               Float
@@ -127,14 +155,15 @@ model Pecivo {
   category            String
   superDepartmentName String
   hasPromotions       Boolean
-  ProductAnalytics    ProductAnalytics? @relation(fields: [productAnalyticsId], references: [id])
+  ProductAnalytics    ProductAnalytics?  @relation(fields: [productAnalyticsId], references: [id])
   productAnalyticsId  Int?
+  ShoppingListItem    ShoppingListItem[]
 
   @@unique([productId, lastUpdated])
 }
 
 model MasoRybyALahodky {
-  id                  Int               @id @default(autoincrement())
+  id                  Int                @id @default(autoincrement())
   productId           String
   title               String
   price               Float
@@ -148,14 +177,15 @@ model MasoRybyALahodky {
   category            String
   superDepartmentName String
   hasPromotions       Boolean
-  ProductAnalytics    ProductAnalytics? @relation(fields: [productAnalyticsId], references: [id])
+  ProductAnalytics    ProductAnalytics?  @relation(fields: [productAnalyticsId], references: [id])
   productAnalyticsId  Int?
+  ShoppingListItem    ShoppingListItem[]
 
   @@unique([productId, lastUpdated])
 }
 
 model MliecneVyrobkyAVajcia {
-  id                  Int               @id @default(autoincrement())
+  id                  Int                @id @default(autoincrement())
   productId           String
   title               String
   price               Float
@@ -169,14 +199,15 @@ model MliecneVyrobkyAVajcia {
   category            String
   superDepartmentName String
   hasPromotions       Boolean
-  ProductAnalytics    ProductAnalytics? @relation(fields: [productAnalyticsId], references: [id])
+  ProductAnalytics    ProductAnalytics?  @relation(fields: [productAnalyticsId], references: [id])
   productAnalyticsId  Int?
+  ShoppingListItem    ShoppingListItem[]
 
   @@unique([productId, lastUpdated])
 }
 
 model TrvanlivePotraviny {
-  id                  Int               @id @default(autoincrement())
+  id                  Int                @id @default(autoincrement())
   productId           String
   title               String
   price               Float
@@ -190,14 +221,15 @@ model TrvanlivePotraviny {
   category            String
   superDepartmentName String
   hasPromotions       Boolean
-  ProductAnalytics    ProductAnalytics? @relation(fields: [productAnalyticsId], references: [id])
+  ProductAnalytics    ProductAnalytics?  @relation(fields: [productAnalyticsId], references: [id])
   productAnalyticsId  Int?
+  ShoppingListItem    ShoppingListItem[]
 
   @@unique([productId, lastUpdated])
 }
 
 model SpecialnaAZdravaVyziva {
-  id                  Int               @id @default(autoincrement())
+  id                  Int                @id @default(autoincrement())
   productId           String
   title               String
   price               Float
@@ -211,14 +243,15 @@ model SpecialnaAZdravaVyziva {
   category            String
   superDepartmentName String
   hasPromotions       Boolean
-  ProductAnalytics    ProductAnalytics? @relation(fields: [productAnalyticsId], references: [id])
+  ProductAnalytics    ProductAnalytics?  @relation(fields: [productAnalyticsId], references: [id])
   productAnalyticsId  Int?
+  ShoppingListItem    ShoppingListItem[]
 
   @@unique([productId, lastUpdated])
 }
 
 model MrazenePotraviny {
-  id                  Int               @id @default(autoincrement())
+  id                  Int                @id @default(autoincrement())
   productId           String
   title               String
   price               Float
@@ -232,14 +265,15 @@ model MrazenePotraviny {
   category            String
   superDepartmentName String
   hasPromotions       Boolean
-  ProductAnalytics    ProductAnalytics? @relation(fields: [productAnalyticsId], references: [id])
+  ProductAnalytics    ProductAnalytics?  @relation(fields: [productAnalyticsId], references: [id])
   productAnalyticsId  Int?
+  ShoppingListItem    ShoppingListItem[]
 
   @@unique([productId, lastUpdated])
 }
 
 model Napoje {
-  id                  Int               @id @default(autoincrement())
+  id                  Int                @id @default(autoincrement())
   productId           String
   title               String
   price               Float
@@ -253,14 +287,15 @@ model Napoje {
   category            String
   superDepartmentName String
   hasPromotions       Boolean
-  ProductAnalytics    ProductAnalytics? @relation(fields: [productAnalyticsId], references: [id])
+  ProductAnalytics    ProductAnalytics?  @relation(fields: [productAnalyticsId], references: [id])
   productAnalyticsId  Int?
+  ShoppingListItem    ShoppingListItem[]
 
   @@unique([productId, lastUpdated])
 }
 
 model Alkohol {
-  id                  Int               @id @default(autoincrement())
+  id                  Int                @id @default(autoincrement())
   productId           String
   title               String
   price               Float
@@ -274,8 +309,9 @@ model Alkohol {
   category            String
   superDepartmentName String
   hasPromotions       Boolean
-  ProductAnalytics    ProductAnalytics? @relation(fields: [productAnalyticsId], references: [id])
+  ProductAnalytics    ProductAnalytics?  @relation(fields: [productAnalyticsId], references: [id])
   productAnalyticsId  Int?
+  ShoppingListItem    ShoppingListItem[]
 
   @@unique([productId, lastUpdated])
 }
@@ -311,4 +347,60 @@ model Promotion {
   alkoholId                 Int?
   starostlivostODomacnost   StarostlivostODomacnost? @relation(fields: [starostlivostODomacnostId], references: [id])
   starostlivostODomacnostId Int?
+  zdravieAKrasa             ZdravieAKrasa?           @relation(fields: [zdravieAKrasaId], references: [id])
+  zdravieAKrasaId           Int?
+}
+
+model UpdateSettings {
+  id         Int      @id @default(autoincrement())
+  xCsrfToken String
+  cookie     String   @db.Text
+  updatedAt  DateTime @updatedAt
+}
+
+model ShoppingList {
+  id        Int                @id @default(autoincrement())
+  name      String
+  userId    String
+  items     ShoppingListItem[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+}
+
+model ShoppingListItem {
+  id                        Int                      @id @default(autoincrement())
+  shoppingListId            Int
+  productId                 String
+  quantity                  Int                      @default(1)
+  category                  String
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
+  shoppingList              ShoppingList             @relation(fields: [shoppingListId], references: [id], onDelete: Cascade)
+  ZdravieAKrasa             ZdravieAKrasa?           @relation(fields: [zdravieAKrasaId], references: [id])
+  zdravieAKrasaId           Int?
+  OvocieAZeleniny           OvocieAZeleniny?         @relation(fields: [ovocieAZeleninyId], references: [id])
+  ovocieAZeleninyId         Int?
+  Grilovanie                Grilovanie?              @relation(fields: [grilovanieId], references: [id])
+  grilovanieId              Int?
+  StarostlivostODomacnost   StarostlivostODomacnost? @relation(fields: [starostlivostODomacnostId], references: [id])
+  starostlivostODomacnostId Int?
+  Pecivo                    Pecivo?                  @relation(fields: [pecivoId], references: [id])
+  pecivoId                  Int?
+  MasoRybyALahodky          MasoRybyALahodky?        @relation(fields: [masoRybyALahodkyId], references: [id])
+  masoRybyALahodkyId        Int?
+  MliecneVyrobkyAVajcia     MliecneVyrobkyAVajcia?   @relation(fields: [mliecneVyrobkyAVajciaId], references: [id])
+  mliecneVyrobkyAVajciaId   Int?
+  TrvanlivePotraviny        TrvanlivePotraviny?      @relation(fields: [trvanlivePotravinyId], references: [id])
+  trvanlivePotravinyId      Int?
+  SpecialnaAZdravaVyziva    SpecialnaAZdravaVyziva?  @relation(fields: [specialnaAZdravaVyzivaId], references: [id])
+  specialnaAZdravaVyzivaId  Int?
+  MrazenePotraviny          MrazenePotraviny?        @relation(fields: [mrazenePotravinyId], references: [id])
+  mrazenePotravinyId        Int?
+  Napoje                    Napoje?                  @relation(fields: [napojeId], references: [id])
+  napojeId                  Int?
+  Alkohol                   Alkohol?                 @relation(fields: [alkoholId], references: [id])
+  alkoholId                 Int?
+
+  @@unique([shoppingListId, productId])
+  @@index([productId])
 }

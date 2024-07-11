@@ -134,11 +134,11 @@ export class TescoController {
 
     @Post('calculate-analytics')
     @ApiOperation({ summary: 'Calculate and store analytics for products' })
-    @ApiQuery({ name: 'category', required: true, enum: ['all', 'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny', 'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky', 'grilovanie', 'alkohol', 'starostlivostODomacnost'] })
+    @ApiQuery({ name: 'category', required: true, enum: ['all', 'trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny', 'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky', 'grilovanie', 'alkohol', 'starostlivostODomacnost', 'zdravieAKrasa'] })
     @ApiResponse({ status: 200, description: 'Analytics calculated and stored successfully' })
     async calculateAnalytics(@Query('category') category: string) {
         if (category === 'all') {
-            const categories = ['trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny', 'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky', 'grilovanie', 'alkohol', 'starostlivostODomacnost'];
+            const categories = ['trvanlivePotraviny', 'specialnaAZdravaVyziva', 'pecivo', 'ovocieAZeleniny', 'napoje', 'mrazenePotraviny', 'mliecneVyrobkyAVajcia', 'masoRybyALahodky', 'grilovanie', 'alkohol', 'starostlivostODomacnost', 'zdravieAKrasa'];
             for (const cat of categories) {
                 await this.service.calculateAndStoreAnalytics(cat);
             }

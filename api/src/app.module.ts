@@ -29,10 +29,16 @@ import { FavoriteService } from './favorite/favorite.service';
 import { FavoriteController } from './favorite/favorite.controller';
 import { StarostlivostODomacnostService } from './starostlivost-o-domacnost/starostlivost-o-domacnost.service';
 import { StarostlivostODomacnostController } from './starostlivost-o-domacnost/starostlivost-o-domacnost.controller';
+import { ZdravieAKrasaService } from './zdravie-a-krasa/zdravie-a-krasa.service';
+import { ZdravieAKrasaController } from './zdravie-a-krasa/zdravie-a-krasa.controller';
+import { UpdateService } from './update-service/update-service.service';
+import { UpdateController } from './update-service/update-service.controller';
+import { ShoppingListService } from './shopping-list/shopping-list.service';
+import { ShoppingListController } from './shopping-list/shopping-list.controller';
 
 @Module({
   imports: [HttpModule],
-  controllers: [AppController, OvocieAZeleninyController, GrilovanieController, MliecneVyrobkyAVajciaController, PecivoController, MasoRybyALahodkyController, TrvanlivePotravinyController, SpecialnaAZdravaVyzivaController, MrazenePotravinyController, NapojeController, AlkoholController, TescoController, FavoriteController, StarostlivostODomacnostController],
-  providers: [AppService, OvocieAZeleninyService, GrilovanieService, PrismaService, MliecneVyrobkyAVajciaService, PecivoService, MasoRybyALahodkyService, TrvanlivePotravinyService, SpecialnaAZdravaVyzivaService, MrazenePotravinyService, NapojeService, AlkoholService, TescoService, FavoriteService, StarostlivostODomacnostService],
+  controllers: [AppController, OvocieAZeleninyController, GrilovanieController, MliecneVyrobkyAVajciaController, PecivoController, MasoRybyALahodkyController, TrvanlivePotravinyController, SpecialnaAZdravaVyzivaController, MrazenePotravinyController, NapojeController, AlkoholController, TescoController, FavoriteController, StarostlivostODomacnostController, ZdravieAKrasaController, UpdateController, ShoppingListController],
+  providers: [AppService, OvocieAZeleninyService, GrilovanieService, PrismaService, MliecneVyrobkyAVajciaService, PecivoService, MasoRybyALahodkyService, TrvanlivePotravinyService, SpecialnaAZdravaVyzivaService, MrazenePotravinyService, NapojeService, AlkoholService, TescoService, FavoriteService, StarostlivostODomacnostService, ZdravieAKrasaService, UpdateService, ShoppingListService],
 })
 export class AppModule { }
