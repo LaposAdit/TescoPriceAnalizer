@@ -217,9 +217,6 @@ const FavoritePage: React.FC = () => {
         const displayCategory = categoryMap[category] || category;
 
 
-
-
-
         const currentPrice = product.promotions.length > 0 && product.promotions[0].promotionPrice !== null
             ? product.promotions[0].promotionPrice
             : product.price;

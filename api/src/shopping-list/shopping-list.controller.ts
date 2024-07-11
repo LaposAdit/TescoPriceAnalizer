@@ -1,7 +1,7 @@
-import { Controller, Post, Body, Param, Delete, Get, ParseIntPipe, HttpCode, HttpStatus, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Body, Param, Delete, Get, Patch, ParseIntPipe, HttpCode, HttpStatus, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam } from '@nestjs/swagger';
 import { ShoppingListService } from './shopping-list.service';
-import { ShoppingListDTO, ShoppingListItemDTO, AddToShoppingListResponseDTO, ShoppingListDeleteResponseDTO } from 'src/dto/ShopingListDTO';
+import { ShoppingListDTO, ShoppingListItemDTO, AddToShoppingListResponseDTO, ShoppingListDeleteResponseDTO, UpdateShoppingListSharingDTO } from 'src/dto/ShopingListDTO';
 
 @ApiTags('Shopping List')
 @Controller('shopping-list')
@@ -26,7 +26,6 @@ export class ShoppingListController {
         return this.shoppingListService.addItemToShoppingList(dto);
     }
 
-
     @Delete('item/:shoppingListId/:productId')
     @ApiOperation({ summary: 'Remove an item from the shopping list' })
     @ApiResponse({ status: 200, description: 'The item has been successfully removed from the shopping list.' })
@@ -38,7 +37,6 @@ export class ShoppingListController {
     ) {
         return this.shoppingListService.removeItemFromShoppingList(shoppingListId, productId);
     }
-
 
     @Delete(':id')
     @HttpCode(HttpStatus.OK)
@@ -74,4 +72,21 @@ export class ShoppingListController {
         return this.shoppingListService.getShoppingListSummariesByUserId(userId);
     }
 
+    @Patch(':id/share')
+    @ApiOperation({ summary: 'Update the sharing status of a shopping list' })
+    @ApiResponse({ status: 200, description: 'The sharing status has been successfully updated.' })
+    @ApiBody({ type: UpdateShoppingListSharingDTO })
+    @ApiParam({ name: 'id', type: Number, description: 'The ID of the shopping list' })
+    async updateShoppingListSharing(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateShoppingListSharingDTO) {
+        return this.shoppingListService.updateShoppingListSharing(id, dto.userId, dto.shared);
+    }
+
+    @Get('shared/:sharedUrlId')
+    @ApiOperation({ summary: 'Get a shopping list by shared URL ID' })
+    @ApiResponse({ status: 200, description: 'The shopping list has been successfully retrieved.' })
+    @ApiResponse({ status: 404, description: 'Shopping list not found.' })
+    @ApiParam({ name: 'sharedUrlId', type: String, description: 'The shared URL ID of the shopping list' })
+    async getShoppingListBySharedUrlId(@Param('sharedUrlId') sharedUrlId: string) {
+        return this.shoppingListService.getShoppingListBySharedUrlId(sharedUrlId);
+    }
 }

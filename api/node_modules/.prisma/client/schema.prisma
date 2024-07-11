@@ -359,12 +359,14 @@ model UpdateSettings {
 }
 
 model ShoppingList {
-  id        Int                @id @default(autoincrement())
-  name      String
-  userId    String
-  items     ShoppingListItem[]
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
+  id          Int                @id @default(autoincrement())
+  name        String
+  userId      String
+  items       ShoppingListItem[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  shared      Boolean            @default(false)
+  sharedUrlId String?            @unique
 }
 
 model ShoppingListItem {

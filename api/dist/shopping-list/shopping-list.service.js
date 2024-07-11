@@ -210,7 +210,14 @@ let ShoppingListService = class ShoppingListService {
                 }
             },
         });
-        return Promise.all(shoppingLists.map(list => this.getDetailedShoppingList(list)));
+        return Promise.all(shoppingLists.map(async (list) => {
+            const detailedList = await this.getDetailedShoppingList(list);
+            return {
+                ...detailedList,
+                shared: list.shared,
+                sharedUrlId: list.sharedUrlId,
+            };
+        }));
     }
     async getDetailedShoppingList(shoppingList) {
         if (!shoppingList || !shoppingList.items) {
@@ -221,6 +228,7 @@ let ShoppingListService = class ShoppingListService {
             const model = this.prisma[modelName];
             const product = await model.findFirst({
                 where: { productId: item.productId },
+                orderBy: { lastUpdated: 'desc' },
                 select: {
                     id: true,
                     productId: true,
@@ -234,7 +242,17 @@ let ShoppingListService = class ShoppingListService {
                     superDepartmentName: true,
                     hasPromotions: true,
                     lastUpdated: true,
-                    promotions: true,
+                    promotions: {
+                        select: {
+                            promotionId: true,
+                            promotionType: true,
+                            startDate: true,
+                            endDate: true,
+                            offerText: true,
+                            attributes: true,
+                            promotionPrice: true
+                        }
+                    },
                     ProductAnalytics: {
                         select: {
                             id: true,
@@ -274,10 +292,31 @@ let ShoppingListService = class ShoppingListService {
                     aisleName: product.aisleName,
                     superDepartmentName: product.superDepartmentName,
                     category: item.category,
-                    promotions: product.promotions,
-                    hasPromotions: product.hasPromotions,
+                    promotions: product.promotions.map(promo => ({
+                        promotionId: promo.promotionId,
+                        promotionType: promo.promotionType,
+                        startDate: promo.startDate.toISOString(),
+                        endDate: promo.endDate.toISOString(),
+                        offerText: promo.offerText,
+                        attributes: promo.attributes,
+                        promotionPrice: promo.promotionPrice,
+                    })),
+                    hasPromotions: product.promotions.length > 0,
                     lastUpdated: product.lastUpdated,
-                    analytics: product.ProductAnalytics,
+                    analytics: product.ProductAnalytics ? {
+                        priceDrop: product.ProductAnalytics.priceDrop,
+                        priceIncrease: product.ProductAnalytics.priceIncrease,
+                        percentageChange: product.ProductAnalytics.percentageChange,
+                        isBuyRecommended: product.ProductAnalytics.isBuyRecommended,
+                        isOnSale: product.ProductAnalytics.isOnSale,
+                        previousPrice: product.ProductAnalytics.previousPrice,
+                        priceChangeStatus: product.ProductAnalytics.priceChangeStatus,
+                        averagePrice: product.ProductAnalytics.averagePrice,
+                        medianPrice: product.ProductAnalytics.medianPrice,
+                        priceStdDev: product.ProductAnalytics.priceStdDev,
+                        promotionImpact: product.ProductAnalytics.promotionImpact,
+                        lastCalculated: product.ProductAnalytics.lastCalculated,
+                    } : null,
                 },
             };
         }));
@@ -290,8 +329,56 @@ let ShoppingListService = class ShoppingListService {
             select: {
                 id: true,
                 name: true,
+                shared: true,
+                sharedUrlId: true,
             },
         });
+    }
+    async updateShoppingListSharing(id, userId, shared) {
+        const shoppingList = await this.prisma.shoppingList.findFirst({
+            where: { id, userId }
+        });
+        if (!shoppingList) {
+            throw new common_1.NotFoundException(`Shopping list with id ${id} not found or you do not have permission to update it.`);
+        }
+        const sharedUrlId = shared ? this.generateSharedUrlId() : null;
+        return this.prisma.shoppingList.update({
+            where: { id },
+            data: {
+                shared,
+                sharedUrlId
+            },
+        });
+    }
+    generateSharedUrlId() {
+        const possibleChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let sharedUrlId = '';
+        for (let i = 0; i < 13; i++) {
+            sharedUrlId += possibleChars.charAt(Math.floor(Math.random() * possibleChars.length));
+        }
+        return sharedUrlId;
+    }
+    async getShoppingListBySharedUrlId(sharedUrlId) {
+        const shoppingList = await this.prisma.shoppingList.findUnique({
+            where: { sharedUrlId },
+            include: {
+                items: {
+                    select: {
+                        id: true,
+                        shoppingListId: true,
+                        productId: true,
+                        quantity: true,
+                        category: true,
+                        createdAt: true,
+                        updatedAt: true,
+                    }
+                }
+            },
+        });
+        if (!shoppingList) {
+            throw new common_1.NotFoundException(`Shopping list with sharedUrlId ${sharedUrlId} not found`);
+        }
+        return this.getDetailedShoppingList(shoppingList);
     }
     getModelName(category) {
         const modelMapping = {

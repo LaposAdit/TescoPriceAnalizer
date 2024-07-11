@@ -1,6 +1,6 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { ShoppingListDTO, ShoppingListItemDTO, AddToShoppingListResponseDTO, ShoppingListDeleteResponseDTO } from 'src/dto/ShopingListDTO';
+import { ShoppingListDTO, ShoppingListItemDTO, AddToShoppingListResponseDTO, ShoppingListDeleteResponseDTO, UpdateShoppingListSharingDTO } from 'src/dto/ShopingListDTO';
 import { ProductCategory } from 'src/enum/product-category.enum';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
@@ -19,7 +19,6 @@ export class ShoppingListService {
 
     async addItemToShoppingList(dto: ShoppingListItemDTO): Promise<AddToShoppingListResponseDTO> {
         try {
-            // Check if the shopping list exists
             const shoppingList = await this.prisma.shoppingList.findUnique({
                 where: { id: dto.shoppingListId }
             });
@@ -134,7 +133,6 @@ export class ShoppingListService {
         });
     }
 
-
     async deleteShoppingList(id: number): Promise<ShoppingListDeleteResponseDTO> {
         try {
             const shoppingList = await this.prisma.shoppingList.findUnique({
@@ -204,7 +202,6 @@ export class ShoppingListService {
         return this.getDetailedShoppingList(shoppingList);
     }
 
-
     async getShoppingListsByUserId(userId: string) {
         const shoppingLists = await this.prisma.shoppingList.findMany({
             where: { userId },
@@ -223,9 +220,17 @@ export class ShoppingListService {
             },
         });
 
-        return Promise.all(shoppingLists.map(list => this.getDetailedShoppingList(list)));
+        return Promise.all(
+            shoppingLists.map(async (list) => {
+                const detailedList = await this.getDetailedShoppingList(list);
+                return {
+                    ...detailedList,
+                    shared: list.shared,
+                    sharedUrlId: list.sharedUrlId,
+                };
+            })
+        );
     }
-
 
     private async getDetailedShoppingList(shoppingList: any) {
         if (!shoppingList || !shoppingList.items) {
@@ -238,6 +243,7 @@ export class ShoppingListService {
                 const model = this.prisma[modelName];
                 const product = await model.findFirst({
                     where: { productId: item.productId },
+                    orderBy: { lastUpdated: 'desc' }, // Order by last updated to get the latest product
                     select: {
                         id: true,
                         productId: true,
@@ -251,7 +257,17 @@ export class ShoppingListService {
                         superDepartmentName: true,
                         hasPromotions: true,
                         lastUpdated: true,
-                        promotions: true,
+                        promotions: {
+                            select: {
+                                promotionId: true,
+                                promotionType: true,
+                                startDate: true,
+                                endDate: true,
+                                offerText: true,
+                                attributes: true,
+                                promotionPrice: true
+                            }
+                        },
                         ProductAnalytics: {
                             select: {
                                 id: true,
@@ -293,10 +309,31 @@ export class ShoppingListService {
                         aisleName: product.aisleName,
                         superDepartmentName: product.superDepartmentName,
                         category: item.category,
-                        promotions: product.promotions,
-                        hasPromotions: product.hasPromotions,
+                        promotions: product.promotions.map(promo => ({
+                            promotionId: promo.promotionId,
+                            promotionType: promo.promotionType,
+                            startDate: promo.startDate.toISOString(),
+                            endDate: promo.endDate.toISOString(),
+                            offerText: promo.offerText,
+                            attributes: promo.attributes,
+                            promotionPrice: promo.promotionPrice,
+                        })),
+                        hasPromotions: product.promotions.length > 0,
                         lastUpdated: product.lastUpdated,
-                        analytics: product.ProductAnalytics,
+                        analytics: product.ProductAnalytics ? {
+                            priceDrop: product.ProductAnalytics.priceDrop,
+                            priceIncrease: product.ProductAnalytics.priceIncrease,
+                            percentageChange: product.ProductAnalytics.percentageChange,
+                            isBuyRecommended: product.ProductAnalytics.isBuyRecommended,
+                            isOnSale: product.ProductAnalytics.isOnSale,
+                            previousPrice: product.ProductAnalytics.previousPrice,
+                            priceChangeStatus: product.ProductAnalytics.priceChangeStatus,
+                            averagePrice: product.ProductAnalytics.averagePrice,
+                            medianPrice: product.ProductAnalytics.medianPrice,
+                            priceStdDev: product.ProductAnalytics.priceStdDev,
+                            promotionImpact: product.ProductAnalytics.promotionImpact,
+                            lastCalculated: product.ProductAnalytics.lastCalculated,
+                        } : null,
                     },
                 };
             })
@@ -308,14 +345,74 @@ export class ShoppingListService {
     }
 
 
+
+
+
+
     async getShoppingListSummariesByUserId(userId: string) {
         return this.prisma.shoppingList.findMany({
             where: { userId },
             select: {
                 id: true,
                 name: true,
+                shared: true,
+                sharedUrlId: true,
             },
         });
+    }
+
+    async updateShoppingListSharing(id: number, userId: string, shared: boolean) {
+        const shoppingList = await this.prisma.shoppingList.findFirst({
+            where: { id, userId }
+        });
+
+        if (!shoppingList) {
+            throw new NotFoundException(`Shopping list with id ${id} not found or you do not have permission to update it.`);
+        }
+
+        const sharedUrlId = shared ? this.generateSharedUrlId() : null;
+
+        return this.prisma.shoppingList.update({
+            where: { id },
+            data: {
+                shared,
+                sharedUrlId
+            },
+        });
+    }
+
+    private generateSharedUrlId(): string {
+        const possibleChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let sharedUrlId = '';
+        for (let i = 0; i < 13; i++) {
+            sharedUrlId += possibleChars.charAt(Math.floor(Math.random() * possibleChars.length));
+        }
+        return sharedUrlId;
+    }
+
+    async getShoppingListBySharedUrlId(sharedUrlId: string) {
+        const shoppingList = await this.prisma.shoppingList.findUnique({
+            where: { sharedUrlId },
+            include: {
+                items: {
+                    select: {
+                        id: true,
+                        shoppingListId: true,
+                        productId: true,
+                        quantity: true,
+                        category: true,
+                        createdAt: true,
+                        updatedAt: true,
+                    }
+                }
+            },
+        });
+
+        if (!shoppingList) {
+            throw new NotFoundException(`Shopping list with sharedUrlId ${sharedUrlId} not found`);
+        }
+
+        return this.getDetailedShoppingList(shoppingList);
     }
 
     private getModelName(category: ProductCategory): string {

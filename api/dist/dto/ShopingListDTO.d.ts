@@ -33,3 +33,7 @@ export declare class ShoppingListDeleteResponseDTO {
         itemsDeleted: number;
     };
 }
+export declare class UpdateShoppingListSharingDTO {
+    userId: string;
+    shared: boolean;
+}

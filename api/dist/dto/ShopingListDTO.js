@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ShoppingListDeleteResponseDTO = exports.AddToShoppingListResponseDTO = exports.ShoppingListItemResponseDTO = exports.ShoppingListItemDTO = exports.ShoppingListDTO = void 0;
+exports.UpdateShoppingListSharingDTO = exports.ShoppingListDeleteResponseDTO = exports.AddToShoppingListResponseDTO = exports.ShoppingListItemResponseDTO = exports.ShoppingListItemDTO = exports.ShoppingListDTO = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const product_category_enum_1 = require("../enum/product-category.enum");
 class ShoppingListDTO {
@@ -111,4 +111,15 @@ __decorate([
     (0, swagger_1.ApiProperty)({ example: { id: 1, itemsDeleted: 5 }, description: 'Additional data about the delete operation', required: false }),
     __metadata("design:type", Object)
 ], ShoppingListDeleteResponseDTO.prototype, "data", void 0);
+class UpdateShoppingListSharingDTO {
+}
+exports.UpdateShoppingListSharingDTO = UpdateShoppingListSharingDTO;
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'user123', description: 'The ID of the user' }),
+    __metadata("design:type", String)
+], UpdateShoppingListSharingDTO.prototype, "userId", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: true, description: 'Indicates if the shopping list should be shared' }),
+    __metadata("design:type", Boolean)
+], UpdateShoppingListSharingDTO.prototype, "shared", void 0);
 //# sourceMappingURL=ShopingListDTO.js.map

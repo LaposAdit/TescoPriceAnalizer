@@ -1,4 +1,3 @@
-// src/shopping-list/dto/shopping-list.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
 import { ProductCategory } from 'src/enum/product-category.enum';
 
@@ -78,3 +77,10 @@ export class ShoppingListDeleteResponseDTO {
     };
 }
 
+export class UpdateShoppingListSharingDTO {
+    @ApiProperty({ example: 'user123', description: 'The ID of the user' })
+    userId: string;
+
+    @ApiProperty({ example: true, description: 'Indicates if the shopping list should be shared' })
+    shared: boolean;
+}

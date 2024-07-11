@@ -9,6 +9,8 @@ export declare class ShoppingListService {
         userId: string;
         createdAt: Date;
         updatedAt: Date;
+        shared: boolean;
+        sharedUrlId: string;
     }>;
     addItemToShoppingList(dto: ShoppingListItemDTO): Promise<AddToShoppingListResponseDTO>;
     removeItemFromShoppingList(shoppingListId: number, productId: string): Promise<import(".prisma/client").Prisma.BatchPayload>;
@@ -19,6 +21,19 @@ export declare class ShoppingListService {
     getShoppingListSummariesByUserId(userId: string): Promise<{
         id: number;
         name: string;
+        shared: boolean;
+        sharedUrlId: string;
     }[]>;
+    updateShoppingListSharing(id: number, userId: string, shared: boolean): Promise<{
+        id: number;
+        name: string;
+        userId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        shared: boolean;
+        sharedUrlId: string;
+    }>;
+    private generateSharedUrlId;
+    getShoppingListBySharedUrlId(sharedUrlId: string): Promise<any>;
     private getModelName;
 }

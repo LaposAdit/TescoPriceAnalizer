@@ -42,6 +42,12 @@ let ShoppingListController = class ShoppingListController {
     async getShoppingListSummaries(userId) {
         return this.shoppingListService.getShoppingListSummariesByUserId(userId);
     }
+    async updateShoppingListSharing(id, dto) {
+        return this.shoppingListService.updateShoppingListSharing(id, dto.userId, dto.shared);
+    }
+    async getShoppingListBySharedUrlId(sharedUrlId) {
+        return this.shoppingListService.getShoppingListBySharedUrlId(sharedUrlId);
+    }
 };
 exports.ShoppingListController = ShoppingListController;
 __decorate([
@@ -120,6 +126,29 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], ShoppingListController.prototype, "getShoppingListSummaries", null);
+__decorate([
+    (0, common_1.Patch)(':id/share'),
+    (0, swagger_1.ApiOperation)({ summary: 'Update the sharing status of a shopping list' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'The sharing status has been successfully updated.' }),
+    (0, swagger_1.ApiBody)({ type: ShopingListDTO_1.UpdateShoppingListSharingDTO }),
+    (0, swagger_1.ApiParam)({ name: 'id', type: Number, description: 'The ID of the shopping list' }),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, ShopingListDTO_1.UpdateShoppingListSharingDTO]),
+    __metadata("design:returntype", Promise)
+], ShoppingListController.prototype, "updateShoppingListSharing", null);
+__decorate([
+    (0, common_1.Get)('shared/:sharedUrlId'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get a shopping list by shared URL ID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'The shopping list has been successfully retrieved.' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Shopping list not found.' }),
+    (0, swagger_1.ApiParam)({ name: 'sharedUrlId', type: String, description: 'The shared URL ID of the shopping list' }),
+    __param(0, (0, common_1.Param)('sharedUrlId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ShoppingListController.prototype, "getShoppingListBySharedUrlId", null);
 exports.ShoppingListController = ShoppingListController = __decorate([
     (0, swagger_1.ApiTags)('Shopping List'),
     (0, common_1.Controller)('shopping-list'),
