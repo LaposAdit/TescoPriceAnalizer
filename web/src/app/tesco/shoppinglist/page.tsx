@@ -1,6 +1,6 @@
-"use client"
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+"use client";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 
 interface ShoppingList {
     id: number;
@@ -14,17 +14,66 @@ interface ShoppingListItem {
     productId: string;
     quantity: number;
     category: string;
+    product: ProductDetail;
+}
+
+interface ProductDetail {
+    dbId: number;
+    productId: string;
+    title: string;
+    price: number;
+    unitPrice: number;
+    imageUrl: string;
+    unitOfMeasure: string;
+    isForSale: boolean;
+    aisleName: string;
+    superDepartmentName: string;
+    category: string;
+    promotions: Promotion[];
+    hasPromotions: boolean;
+    lastUpdated: string;
+    analytics: AnalyticsData;
+}
+
+interface Promotion {
+    id: number;
+    promotionId: string;
+    promotionType: string;
+    startDate: string;
+    endDate: string;
+    offerText: string;
+    promotionPrice: number | null;
+    attributes: string[];
+}
+
+interface AnalyticsData {
+    id: number;
+    productId: string;
+    priceDrop: number;
+    priceIncrease: number;
+    percentageChange: number;
+    isBuyRecommended: string;
+    isOnSale: boolean;
+    previousPrice: number;
+    priceChangeStatus: string;
+    averagePrice: number;
+    medianPrice: number;
+    priceStdDev: number;
+    promotionImpact: number | null;
+    lastCalculated: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 const ShoppingListPage: React.FC = () => {
     const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([]);
-    const [newListName, setNewListName] = useState('');
-    const [newItemProductId, setNewItemProductId] = useState('');
+    const [newListName, setNewListName] = useState("");
+    const [newItemProductId, setNewItemProductId] = useState("");
     const [newItemQuantity, setNewItemQuantity] = useState(1);
-    const [newItemCategory, setNewItemCategory] = useState('');
+    const [newItemCategory, setNewItemCategory] = useState("");
     const [selectedListId, setSelectedListId] = useState<number | null>(null);
 
-    const userId = 'user123'; // Replace with actual user ID or authentication logic
+    const userId = "user_2ixyROEpzS2WRW2LkyQhp0uyd9B"; // Replace with actual user ID or authentication logic
 
     useEffect(() => {
         fetchShoppingLists();
@@ -32,56 +81,56 @@ const ShoppingListPage: React.FC = () => {
 
     const fetchShoppingLists = async () => {
         try {
-            const response = await axios.get(`/api/shopping-list/user/${userId}`);
+            const response = await axios.get(`http://localhost:3000/shopping-list/user/${userId}`);
             setShoppingLists(response.data);
         } catch (error) {
-            console.error('Error fetching shopping lists:', error);
+            console.error("Error fetching shopping lists:", error);
         }
     };
 
     const createShoppingList = async () => {
         try {
-            await axios.post('/api/shopping-list', { name: newListName, userId });
-            setNewListName('');
+            await axios.post("http://localhost:3000/shopping-list", { name: newListName, userId });
+            setNewListName("");
             fetchShoppingLists();
         } catch (error) {
-            console.error('Error creating shopping list:', error);
+            console.error("Error creating shopping list:", error);
         }
     };
 
     const addItemToList = async () => {
         if (!selectedListId) return;
         try {
-            await axios.post('/api/shopping-list/item', {
+            await axios.post("http://localhost:3000/shopping-list/item", {
                 shoppingListId: selectedListId,
                 productId: newItemProductId,
                 quantity: newItemQuantity,
                 category: newItemCategory,
             });
-            setNewItemProductId('');
+            setNewItemProductId("");
             setNewItemQuantity(1);
-            setNewItemCategory('');
+            setNewItemCategory("");
             fetchShoppingLists();
         } catch (error) {
-            console.error('Error adding item to shopping list:', error);
+            console.error("Error adding item to shopping list:", error);
         }
     };
 
     const removeItemFromList = async (listId: number, productId: string) => {
         try {
-            await axios.delete(`/api/shopping-list/item/${listId}/${productId}`);
+            await axios.delete(`http://localhost:3000/shopping-list/item/${listId}/${productId}`);
             fetchShoppingLists();
         } catch (error) {
-            console.error('Error removing item from shopping list:', error);
+            console.error("Error removing item from shopping list:", error);
         }
     };
 
     const deleteShoppingList = async (listId: number) => {
         try {
-            await axios.delete(`/api/shopping-list/${listId}`);
+            await axios.delete(`http://localhost:3000/shopping-list/${listId}`);
             fetchShoppingLists();
         } catch (error) {
-            console.error('Error deleting shopping list:', error);
+            console.error("Error deleting shopping list:", error);
         }
     };
 
@@ -111,7 +160,14 @@ const ShoppingListPage: React.FC = () => {
                     <ul>
                         {list.items.map((item) => (
                             <li key={item.id} className="flex justify-between items-center mb-2">
-                                <span>{item.productId} - Quantity: {item.quantity}</span>
+                                <div className="flex items-center">
+                                    <img src={item.product.imageUrl} alt={item.product.title} className="w-16 h-16 mr-4" />
+                                    <div>
+                                        <h3 className="font-semibold">{item.product.title}</h3>
+                                        <p>Quantity: {item.quantity}</p>
+                                        <p>Price: €{item.product.price}</p>
+                                    </div>
+                                </div>
                                 <button onClick={() => removeItemFromList(list.id, item.productId)} className="bg-red-300 p-1 rounded">
                                     Remove
                                 </button>
@@ -147,7 +203,7 @@ const ShoppingListPage: React.FC = () => {
                         </div>
                     )}
                     <button onClick={() => setSelectedListId(list.id)} className="text-blue-500 mt-2">
-                        {selectedListId === list.id ? 'Cancel' : 'Add Item'}
+                        {selectedListId === list.id ? "Cancel" : "Add Item"}
                     </button>
                 </div>
             ))}
