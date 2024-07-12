@@ -5,6 +5,7 @@ import {
   ClerkProvider,
 } from '@clerk/nextjs'
 import NavbarAndSidebar from "./compoments/NavbarAndSiderbar";
+import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -25,11 +26,20 @@ export default function RootLayout({
           <NavbarAndSidebar />
           <div className="flex">
             {/* Content area with margin to account for sidebar */}
-            <div className="ml-[256px] mt-[64px] flex-1 p-4 overflow-auto">
-              <div className="min-h-full bg-white rounded-3xl">
-                {children}
+            <SignedOut>
+              <div className="mt-[64px] flex-1 p-4 overflow-auto">
+                <div className="min-h-full bg-white rounded-3xl">
+                  {children}
+                </div>
               </div>
-            </div>
+            </SignedOut>
+            <SignedIn>
+              <div className="ml-[256px] mt-[64px] flex-1 p-4 overflow-auto">
+                <div className="min-h-full bg-white rounded-3xl">
+                  {children}
+                </div>
+              </div>
+            </SignedIn>
           </div>
         </body>
       </html>

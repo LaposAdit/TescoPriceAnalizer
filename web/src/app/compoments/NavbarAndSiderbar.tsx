@@ -111,42 +111,44 @@ const NavbarAndSidebar: React.FC = () => {
                 </div>
             </nav>
 
-            <aside className={`fixed top-16 left-0 z-40 w-64 h-[calc(100%-64px)] overflow-y-auto bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
-                <div className="h-full px-3 py-4 overflow-y-auto">
-                    <nav className="space-y-1">
-                        <SidebarSection
-                            title="Main"
-                            isOpen={openSections.main}
-                            onToggle={() => toggleSection('main')}
-                            items={[
-                                { icon: Layout, text: "Home", href: "/" },
-                                { icon: ShoppingBasket, text: "Tesco", href: "/tesco" },
-                                { icon: TableProperties, text: "Tesco Analytics", href: "/tesco/table" },
-                            ]}
-                        />
-                        <SidebarSection
-                            title="Tesco Favorites"
-                            isOpen={openSections.tescoFavorites}
-                            onToggle={() => toggleSection('tescoFavorites')}
-                            items={[
-                                { icon: Star, text: "Items", href: "/tesco/favorite" },
-                                { icon: BarChart2, text: "Analytics", href: "/tesco/favorite/analytics" },
-                                { icon: Briefcase, text: "Shop", href: "/hiring" },
-                            ]}
-                        />
-                        <SidebarSection
-                            title="Finance"
-                            isOpen={openSections.finance}
-                            onToggle={() => toggleSection('finance')}
-                            items={[
-                                { icon: DollarSign, text: "PayRolls", href: "/payrolls" },
-                                { icon: FileText, text: "Invoices", href: "/invoices" },
-                                { icon: CreditCard, text: "Expenses", href: "/expenses" },
-                            ]}
-                        />
-                    </nav>
-                </div>
-            </aside>
+            <SignedIn>
+                <aside className={`fixed top-16 left-0 z-40 w-64 h-[calc(100%-64px)] overflow-y-auto bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+                    <div className="h-full px-3 py-4 overflow-y-auto">
+                        <nav className="space-y-1">
+                            <SidebarSection
+                                title="Main"
+                                isOpen={openSections.main}
+                                onToggle={() => toggleSection('main')}
+                                items={[
+                                    { icon: Layout, text: "Home", href: "/" },
+                                    { icon: ShoppingBasket, text: "Tesco", href: "/tesco" },
+                                    { icon: TableProperties, text: "Tesco Analytics", href: "/tesco/table" },
+                                ]}
+                            />
+                            <SidebarSection
+                                title="Tesco Favorites"
+                                isOpen={openSections.tescoFavorites}
+                                onToggle={() => toggleSection('tescoFavorites')}
+                                items={[
+                                    { icon: Star, text: "Items", href: "/tesco/favorite" },
+                                    { icon: BarChart2, text: "Analytics", href: "/tesco/favorite/analytics" },
+                                    { icon: Briefcase, text: "Shop", href: "/hiring" },
+                                ]}
+                            />
+                            <SidebarSection
+                                title="Finance"
+                                isOpen={openSections.finance}
+                                onToggle={() => toggleSection('finance')}
+                                items={[
+                                    { icon: DollarSign, text: "PayRolls", href: "/payrolls" },
+                                    { icon: FileText, text: "Invoices", href: "/invoices" },
+                                    { icon: CreditCard, text: "Expenses", href: "/expenses" },
+                                ]}
+                            />
+                        </nav>
+                    </div>
+                </aside>
+            </SignedIn>
         </>
     );
 };

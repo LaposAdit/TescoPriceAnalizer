@@ -1,8 +1,10 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import axios from 'axios';
 import { useUser } from '@clerk/clerk-react';
-import { Grid, List, Share2, Trash2, Link2, TrendingDown, X, TrendingUp, ThumbsUp, ThumbsDown, Meh } from 'lucide-react';
+import { Grid, List, Share2, Trash2, Link2, TrendingDown, X, Plus, TrendingUp, ThumbsUp, ThumbsDown, Meh, ChevronUp, ChevronDown, Copy, Check } from 'lucide-react';
+import ShoppingListAnalytics from '../compoments/ShoppingListAnalytics';
+import GridItem from '../compoments/GridItem';
 
 interface ShoppingList {
     id: number;
@@ -84,87 +86,13 @@ const categoryMap: { [key: string]: string } = {
     zdravieAKrasa: 'Zdravie a Krása',
 };
 
-const GridItem: React.FC<{ item: ShoppingListItem; listId: number; removeItemFromList: (listId: number, productId: string) => void }> = ({ item, listId, removeItemFromList }) => {
-    const { product } = item;
-    const currentPrice = product.promotions.length > 0 && product.promotions[0].promotionPrice !== null
-        ? product.promotions[0].promotionPrice
-        : product.price;
-    const priceChange = product.analytics.priceChangeStatus === 'decreased'
-        ? product.analytics.priceDrop
-        : product.analytics.priceIncrease;
-    const priceChangePercent = Math.abs(product.analytics.percentageChange);
-    const isPriceDecreased = product.analytics.priceChangeStatus === 'decreased';
-
-    return (
-        <div className="bg-white shadow-lg rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl relative group">
-            <button
-                onClick={() => removeItemFromList(listId, product.productId)}
-                className="absolute top-2 right-2 p-1 bg-white bg-opacity-70 rounded-full text-gray-500 hover:text-red-500 hover:bg-opacity-100 transition-all duration-300 z-10"
-                aria-label="Remove from list"
-            >
-                <X size={20} />
-            </button>
-            <div className="relative">
-                <img src={product.imageUrl} alt={product.title} className="w-full h-48 object-contain p-[20px]" />
-                {product.hasPromotions && (
-                    <span className="absolute top-2 left-2 bg-indigo-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                        On Sale
-                    </span>
-                )}
-            </div>
-            <div className="p-4">
-                <h2 className="text-lg font-semibold text-gray-900 mb-2 h-14 overflow-hidden">{product.title}</h2>
-                <div className="flex justify-between items-baseline mb-2">
-                    <p className="text-2xl font-bold text-indigo-600">€{currentPrice.toFixed(2)}</p>
-                    {product.hasPromotions && (
-                        <p className="text-sm text-gray-500 line-through">€{product.price.toFixed(2)}</p>
-                    )}
-                </div>
-                <div className="flex justify-between items-center mb-2 text-sm">
-                    <span className="text-gray-600">Unit Price:</span>
-                    <span className="font-medium">€{product.unitPrice.toFixed(2)} / {product.unitOfMeasure}</span>
-                </div>
-                <div className={`flex items-center justify-between mb-2 text-sm ${isPriceDecreased ? 'text-green-500' : 'text-red-500'}`}>
-                    <span>Price Change:</span>
-                    <span className="font-medium flex items-center">
-                        {isPriceDecreased ? (
-                            <>
-                                <TrendingDown size={16} className="mr-1" />
-                                -{priceChangePercent.toFixed(1)}% (€{priceChange.toFixed(2)} less)
-                            </>
-                        ) : (
-                            <>
-                                <TrendingUp size={16} className="mr-1" />
-                                +{priceChangePercent.toFixed(1)}% (€{priceChange.toFixed(2)} more)
-                            </>
-                        )}
-                    </span>
-                </div>
-                <div className="flex items-center justify-between mb-2 text-sm">
-                    <span className="text-gray-600">Buy Recommendation:</span>
-                    <span className={`font-medium flex items-center ${product.analytics.isBuyRecommended === 'yes' ? 'text-green-500' : product.analytics.isBuyRecommended === 'no' ? 'text-red-500' : 'text-blue-500'}`}>
-                        {product.analytics.isBuyRecommended === 'yes' && <ThumbsUp size={16} className="mr-1" />}
-                        {product.analytics.isBuyRecommended === 'no' && <ThumbsDown size={16} className="mr-1" />}
-                        {product.analytics.isBuyRecommended === 'neutral' && <Meh size={16} className="mr-1" />}
-                        {product.analytics.isBuyRecommended}
-                    </span>
-                </div>
-                {product.promotions.length > 0 && (
-                    <p className="text-sm text-green-600 bg-green-100 px-2 py-1 rounded-full mt-2 text-center">
-                        {product.promotions[0].offerText}
-                    </p>
-                )}
-            </div>
-        </div>
-
-    );
-};
-
 const ShoppingListPage: React.FC = () => {
     const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([]);
     const [newListName, setNewListName] = useState("");
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
     const { user } = useUser();
+    const [openLists, setOpenLists] = useState<number[]>([]);
+    const [copiedUrls, setCopiedUrls] = useState<number[]>([]);
 
     useEffect(() => {
         if (user) {
@@ -223,127 +151,203 @@ const ShoppingListPage: React.FC = () => {
         }
     };
 
-    return (
-        <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-5xl mx-auto">
-                <h1 className="text-3xl font-bold text-gray-900 mb-8">Shopping Lists</h1>
+    const toggleListOpen = (listId: number) => {
+        setOpenLists(prev =>
+            prev.includes(listId)
+                ? prev.filter(id => id !== listId)
+                : [...prev, listId]
+        );
+    };
+    const copyToClipboard = (listId: number, sharedUrlId: string) => {
+        const url = `http://localhost:3001/shared/${sharedUrlId}`;
+        navigator.clipboard.writeText(url).then(() => {
+            setCopiedUrls(prev => [...prev, listId]);
+            setTimeout(() => {
+                setCopiedUrls(prev => prev.filter(id => id !== listId));
+            }, 2000);
+        });
+    };
 
-                <div className="mb-8 flex justify-between items-center">
-                    <div className="flex">
+    const sortedShoppingLists = useMemo(() => {
+        return [...shoppingLists].sort((a, b) => b.id - a.id);
+    }, [shoppingLists]);
+
+
+    return (
+        <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto">
+                <h1 className="text-4xl font-bold text-gray-900 mb-8">My Shopping Lists</h1>
+
+                <div className="mb-8 bg-white rounded-xl shadow-sm p-6">
+                    <h2 className="text-xl font-semibold text-gray-800 mb-4">Create New List</h2>
+                    <div className="flex items-center space-x-4">
                         <input
                             type="text"
                             value={newListName}
                             onChange={(e) => setNewListName(e.target.value)}
                             placeholder="Enter new list name"
-                            className="flex-grow px-4 py-2 border border-gray-300 rounded-md focus:border-indigo-500 focus:outline-none transition-colors duration-300"
+                            className="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300"
                         />
                         <button
                             onClick={createShoppingList}
-                            className="ml-4 px-6 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition-colors duration-300"
+                            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-300 flex items-center"
                         >
+                            <Plus size={20} className="mr-2" />
                             Create List
                         </button>
                     </div>
+                </div>
 
-                    <div className="flex items-center space-x-2">
+                <div className="mb-8 flex justify-end">
+                    <div className="flex items-center space-x-2 bg-white rounded-lg shadow-sm p-1">
                         <button
                             onClick={() => setViewMode('grid')}
-                            className={`p-2 rounded-full ${viewMode === 'grid' ? 'bg-indigo-500 text-white' : 'bg-gray-300 text-gray-600 hover:bg-gray-400'}`}
+                            className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-indigo-100 text-indigo-600' : 'text-gray-600 hover:bg-gray-100'}`}
                         >
                             <Grid size={20} />
                         </button>
                         <button
                             onClick={() => setViewMode('table')}
-                            className={`p-2 rounded-full ${viewMode === 'table' ? 'bg-indigo-500 text-white' : 'bg-gray-300 text-gray-600 hover:bg-gray-400'}`}
+                            className={`p-2 rounded-md ${viewMode === 'table' ? 'bg-indigo-100 text-indigo-600' : 'text-gray-600 hover:bg-gray-100'}`}
                         >
                             <List size={20} />
                         </button>
                     </div>
                 </div>
 
+
                 <div className="space-y-8">
-                    {shoppingLists.map((list) => (
-                        <div key={list.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                            <div className="p-4 flex justify-between items-center border-b">
-                                <h2 className="text-xl font-semibold text-gray-800">{list.name}</h2>
-                                <div className="flex items-center space-x-2">
-                                    <button
-                                        onClick={() => toggleShareList(list)}
-                                        className={`p-2 rounded-full ${list.shared ? 'text-green-500' : 'text-gray-400 hover:text-gray-600'}`}
-                                        title={list.shared ? "Unshare List" : "Share List"}
-                                    >
-                                        <Share2 size={18} />
-                                    </button>
-                                    <button
-                                        onClick={() => deleteShoppingList(list.id)}
-                                        className="p-2 rounded-full text-gray-400 hover:text-red-500"
-                                        title="Delete List"
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
+                    {sortedShoppingLists.map((list) => {
+                        const isOpen = openLists.includes(list.id);
+                        const isCopied = copiedUrls.includes(list.id);
+                        return (
+                            <div key={list.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
+                                <div className="p-6 border-b border-gray-200">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h2 className="text-2xl font-bold text-gray-800">{list.name}</h2>
+                                        <div className="flex items-center space-x-2">
+                                            <button
+                                                onClick={() => toggleShareList(list)}
+                                                className={`p-2 rounded-full ${list.shared ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                                                title={list.shared ? "Unshare List" : "Share List"}
+                                            >
+                                                <Share2 size={20} />
+                                            </button>
+                                            <button
+                                                onClick={() => deleteShoppingList(list.id)}
+                                                className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-red-100 hover:text-red-600"
+                                                title="Delete List"
+                                            >
+                                                <Trash2 size={20} />
+                                            </button>
+                                            <button
+                                                onClick={() => toggleListOpen(list.id)}
+                                                className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                                title={isOpen ? "Collapse List" : "Expand List"}
+                                            >
+                                                {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <ShoppingListAnalytics list={list} />
+
+                                    {list.shared && list.sharedUrlId && (
+                                        <div className="mt-4 p-4 bg-blue-50 text-sm text-blue-700 rounded-lg flex items-center justify-between">
+                                            <div className="flex items-center">
+                                                <Link2 size={18} className="mr-3 flex-shrink-0" />
+                                                <a
+                                                    href={`http://localhost:3001/shared/${list.sharedUrlId}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="hover:underline"
+                                                >
+                                                    View Shared List
+                                                </a>
+                                            </div>
+                                            <button
+                                                onClick={() => list.sharedUrlId && copyToClipboard(list.id, list.sharedUrlId)}
+                                                className={`flex items-center px-3 py-1 rounded-md transition-colors duration-200 ${isCopied
+                                                    ? 'bg-green-500 text-white'
+                                                    : 'bg-white text-blue-600 hover:bg-blue-50'
+                                                    }`}
+                                                disabled={!list.sharedUrlId}
+                                            >
+                                                {isCopied ? (
+                                                    <>
+                                                        <Check size={16} className="mr-1" />
+                                                        Copied!
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Copy size={16} className="mr-1" />
+                                                        Copy URL
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
-                            {list.shared && list.sharedUrlId && (
-                                <div className="px-4 py-2 bg-blue-50 text-sm text-blue-700 flex items-center">
-                                    <Link2 size={14} className="mr-2" />
-                                    <a
-                                        href={`http://localhost:3000/shopping-list/shared/${list.sharedUrlId}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="hover:underline"
-                                    >
-                                        View Shared List
-                                    </a>
-                                </div>
-                            )}
-                            {viewMode === 'grid' ? (
-                                <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {list.items.map((item) => (
-                                        <GridItem key={item.id} item={item} listId={list.id} removeItemFromList={removeItemFromList} />
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead className="bg-gray-50">
-                                            <tr>
-                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-200">
+
+
+                                {isOpen && (
+                                    viewMode === 'grid' ? (
+                                        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                             {list.items.map((item) => (
-                                                <tr key={item.id}>
-                                                    <td className="px-4 py-2">
-                                                        <div className="flex items-center">
-                                                            <img className="h-8 w-8 rounded-full mr-3 object-cover" src={item.product.imageUrl} alt={item.product.title} />
-                                                            <span className="text-sm font-medium text-gray-900">{item.product.title}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-2 text-sm text-gray-500">€{item.product.price.toFixed(2)}</td>
-                                                    <td className="px-4 py-2 text-sm text-gray-500">{item.quantity}</td>
-                                                    <td className="px-4 py-2 text-sm">
-                                                        <button
-                                                            onClick={() => removeItemFromList(list.id, item.product.productId)}
-                                                            className="text-red-500 hover:text-red-700"
-                                                        >
-                                                            Remove
-                                                        </button>
-                                                    </td>
-                                                </tr>
+                                                <GridItem key={item.id} item={item} listId={list.id} removeItemFromList={removeItemFromList} />
                                             ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                                        </div>
+                                    ) : (
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full">
+                                                <thead className="bg-gray-50">
+                                                    <tr>
+                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="bg-white divide-y divide-gray-200">
+                                                    {list.items.map((item) => (
+                                                        <tr key={item.id} className="hover:bg-gray-50 transition-colors duration-150">
+                                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                                <div className="flex items-center">
+                                                                    <img className="h-10 w-10 rounded-lg mr-3 object-cover" src={item.product.imageUrl} alt={item.product.title} />
+                                                                    <span className="text-sm font-medium text-gray-900">{item.product.title}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                                <span className="text-sm text-gray-900 font-medium">€{item.product.price.toFixed(2)}</span>
+                                                                {item.product.hasPromotions && (
+                                                                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                                                        On Sale
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.quantity}</td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                                <button
+                                                                    onClick={() => removeItemFromList(list.id, item.product.productId)}
+                                                                    className="text-indigo-600 hover:text-indigo-900 transition-colors duration-150"
+                                                                >
+                                                                    Remove
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         </div>
     );
-}
+};
 
 export default ShoppingListPage;
