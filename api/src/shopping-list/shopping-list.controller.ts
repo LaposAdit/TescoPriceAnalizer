@@ -89,4 +89,18 @@ export class ShoppingListController {
     async getShoppingListBySharedUrlId(@Param('sharedUrlId') sharedUrlId: string) {
         return this.shoppingListService.getShoppingListBySharedUrlId(sharedUrlId);
     }
+
+    @Patch('item/:shoppingListId/:productId/bought')
+    @ApiOperation({ summary: 'Set an item as bought or not bought' })
+    @ApiResponse({ status: 200, description: 'The item has been successfully updated.' })
+    @ApiParam({ name: 'shoppingListId', type: Number, description: 'The ID of the shopping list' })
+    @ApiParam({ name: 'productId', type: String, description: 'The ID of the product' })
+    @ApiBody({ schema: { properties: { isBought: { type: 'boolean' } } } })
+    async setItemBought(
+        @Param('shoppingListId', ParseIntPipe) shoppingListId: number,
+        @Param('productId') productId: string,
+        @Body('isBought') isBought: boolean
+    ) {
+        return this.shoppingListService.setItemBought(shoppingListId, productId, isBought);
+    }
 }

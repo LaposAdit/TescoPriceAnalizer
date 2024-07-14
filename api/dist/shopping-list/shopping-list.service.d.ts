@@ -35,5 +35,27 @@ export declare class ShoppingListService {
     }>;
     private generateSharedUrlId;
     getShoppingListBySharedUrlId(sharedUrlId: string): Promise<any>;
+    setItemBought(shoppingListId: number, productId: string, isBought: boolean): Promise<{
+        id: number;
+        shoppingListId: number;
+        productId: string;
+        quantity: number;
+        category: string;
+        isBought: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        zdravieAKrasaId: number;
+        ovocieAZeleninyId: number;
+        grilovanieId: number;
+        starostlivostODomacnostId: number;
+        pecivoId: number;
+        masoRybyALahodkyId: number;
+        mliecneVyrobkyAVajciaId: number;
+        trvanlivePotravinyId: number;
+        specialnaAZdravaVyzivaId: number;
+        mrazenePotravinyId: number;
+        napojeId: number;
+        alkoholId: number;
+    }>;
     private getModelName;
 }

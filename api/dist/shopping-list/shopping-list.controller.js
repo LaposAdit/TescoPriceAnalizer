@@ -48,6 +48,9 @@ let ShoppingListController = class ShoppingListController {
     async getShoppingListBySharedUrlId(sharedUrlId) {
         return this.shoppingListService.getShoppingListBySharedUrlId(sharedUrlId);
     }
+    async setItemBought(shoppingListId, productId, isBought) {
+        return this.shoppingListService.setItemBought(shoppingListId, productId, isBought);
+    }
 };
 exports.ShoppingListController = ShoppingListController;
 __decorate([
@@ -149,6 +152,20 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], ShoppingListController.prototype, "getShoppingListBySharedUrlId", null);
+__decorate([
+    (0, common_1.Patch)('item/:shoppingListId/:productId/bought'),
+    (0, swagger_1.ApiOperation)({ summary: 'Set an item as bought or not bought' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'The item has been successfully updated.' }),
+    (0, swagger_1.ApiParam)({ name: 'shoppingListId', type: Number, description: 'The ID of the shopping list' }),
+    (0, swagger_1.ApiParam)({ name: 'productId', type: String, description: 'The ID of the product' }),
+    (0, swagger_1.ApiBody)({ schema: { properties: { isBought: { type: 'boolean' } } } }),
+    __param(0, (0, common_1.Param)('shoppingListId', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Param)('productId')),
+    __param(2, (0, common_1.Body)('isBought')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, String, Boolean]),
+    __metadata("design:returntype", Promise)
+], ShoppingListController.prototype, "setItemBought", null);
 exports.ShoppingListController = ShoppingListController = __decorate([
     (0, swagger_1.ApiTags)('Shopping List'),
     (0, common_1.Controller)('shopping-list'),

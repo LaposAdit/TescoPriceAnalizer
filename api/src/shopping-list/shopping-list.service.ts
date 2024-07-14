@@ -188,6 +188,7 @@ export class ShoppingListService {
                         productId: true,
                         quantity: true,
                         category: true,
+                        isBought: true, // Add this field
                         createdAt: true,
                         updatedAt: true,
                     }
@@ -213,6 +214,7 @@ export class ShoppingListService {
                         productId: true,
                         quantity: true,
                         category: true,
+                        isBought: true, // Add this field
                         createdAt: true,
                         updatedAt: true,
                     }
@@ -344,11 +346,6 @@ export class ShoppingListService {
         return { ...shoppingList, items: validItemsWithProducts };
     }
 
-
-
-
-
-
     async getShoppingListSummariesByUserId(userId: string) {
         return this.prisma.shoppingList.findMany({
             where: { userId },
@@ -401,6 +398,7 @@ export class ShoppingListService {
                         productId: true,
                         quantity: true,
                         category: true,
+                        isBought: true, // Add this field
                         createdAt: true,
                         updatedAt: true,
                     }
@@ -413,6 +411,33 @@ export class ShoppingListService {
         }
 
         return this.getDetailedShoppingList(shoppingList);
+    }
+
+    async setItemBought(shoppingListId: number, productId: string, isBought: boolean) {
+        const shoppingListItem = await this.prisma.shoppingListItem.findUnique({
+            where: {
+                shoppingListId_productId: {
+                    shoppingListId,
+                    productId,
+                },
+            },
+        });
+
+        if (!shoppingListItem) {
+            throw new NotFoundException(`Item with productId ${productId} in shopping list ${shoppingListId} not found`);
+        }
+
+        return this.prisma.shoppingListItem.update({
+            where: {
+                shoppingListId_productId: {
+                    shoppingListId,
+                    productId,
+                },
+            },
+            data: {
+                isBought,
+            },
+        });
     }
 
     private getModelName(category: ProductCategory): string {

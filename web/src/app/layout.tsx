@@ -27,7 +27,7 @@ export default function RootLayout({
           <div className="flex">
             {/* Content area with margin to account for sidebar */}
             <SignedOut>
-              <div className="mt-[64px] flex-1 p-4 overflow-auto">
+              <div className="mt-[64px] px-[50px] flex-1 p-4 overflow-auto">
                 <div className="min-h-full bg-white rounded-3xl">
                   {children}
                 </div>

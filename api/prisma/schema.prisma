@@ -375,6 +375,7 @@ model ShoppingListItem {
   productId                 String
   quantity                  Int                      @default(1)
   category                  String
+  isBought                  Boolean                  @default(false) // Add this line
   createdAt                 DateTime                 @default(now())
   updatedAt                 DateTime                 @updatedAt
   shoppingList              ShoppingList             @relation(fields: [shoppingListId], references: [id], onDelete: Cascade)

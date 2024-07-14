@@ -182,6 +182,7 @@ let ShoppingListService = class ShoppingListService {
                         productId: true,
                         quantity: true,
                         category: true,
+                        isBought: true,
                         createdAt: true,
                         updatedAt: true,
                     }
@@ -204,6 +205,7 @@ let ShoppingListService = class ShoppingListService {
                         productId: true,
                         quantity: true,
                         category: true,
+                        isBought: true,
                         createdAt: true,
                         updatedAt: true,
                     }
@@ -369,6 +371,7 @@ let ShoppingListService = class ShoppingListService {
                         productId: true,
                         quantity: true,
                         category: true,
+                        isBought: true,
                         createdAt: true,
                         updatedAt: true,
                     }
@@ -379,6 +382,30 @@ let ShoppingListService = class ShoppingListService {
             throw new common_1.NotFoundException(`Shopping list with sharedUrlId ${sharedUrlId} not found`);
         }
         return this.getDetailedShoppingList(shoppingList);
+    }
+    async setItemBought(shoppingListId, productId, isBought) {
+        const shoppingListItem = await this.prisma.shoppingListItem.findUnique({
+            where: {
+                shoppingListId_productId: {
+                    shoppingListId,
+                    productId,
+                },
+            },
+        });
+        if (!shoppingListItem) {
+            throw new common_1.NotFoundException(`Item with productId ${productId} in shopping list ${shoppingListId} not found`);
+        }
+        return this.prisma.shoppingListItem.update({
+            where: {
+                shoppingListId_productId: {
+                    shoppingListId,
+                    productId,
+                },
+            },
+            data: {
+                isBought,
+            },
+        });
     }
     getModelName(category) {
         const modelMapping = {
