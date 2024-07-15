@@ -35,10 +35,12 @@ import { UpdateService } from './update-service/update-service.service';
 import { UpdateController } from './update-service/update-service.controller';
 import { ShoppingListService } from './shopping-list/shopping-list.service';
 import { ShoppingListController } from './shopping-list/shopping-list.controller';
+import { DovolenkaService } from './dovolenka/dovolenka.service';
+import { DovolenkaController } from './dovolenka/dovolenka.controller';
 
 @Module({
   imports: [HttpModule],
-  controllers: [AppController, OvocieAZeleninyController, GrilovanieController, MliecneVyrobkyAVajciaController, PecivoController, MasoRybyALahodkyController, TrvanlivePotravinyController, SpecialnaAZdravaVyzivaController, MrazenePotravinyController, NapojeController, AlkoholController, TescoController, FavoriteController, StarostlivostODomacnostController, ZdravieAKrasaController, UpdateController, ShoppingListController],
-  providers: [AppService, OvocieAZeleninyService, GrilovanieService, PrismaService, MliecneVyrobkyAVajciaService, PecivoService, MasoRybyALahodkyService, TrvanlivePotravinyService, SpecialnaAZdravaVyzivaService, MrazenePotravinyService, NapojeService, AlkoholService, TescoService, FavoriteService, StarostlivostODomacnostService, ZdravieAKrasaService, UpdateService, ShoppingListService],
+  controllers: [AppController, OvocieAZeleninyController, GrilovanieController, MliecneVyrobkyAVajciaController, PecivoController, MasoRybyALahodkyController, TrvanlivePotravinyController, SpecialnaAZdravaVyzivaController, MrazenePotravinyController, NapojeController, AlkoholController, TescoController, FavoriteController, StarostlivostODomacnostController, ZdravieAKrasaController, UpdateController, ShoppingListController, DovolenkaController],
+  providers: [AppService, OvocieAZeleninyService, GrilovanieService, PrismaService, MliecneVyrobkyAVajciaService, PecivoService, MasoRybyALahodkyService, TrvanlivePotravinyService, SpecialnaAZdravaVyzivaService, MrazenePotravinyService, NapojeService, AlkoholService, TescoService, FavoriteService, StarostlivostODomacnostService, ZdravieAKrasaService, UpdateService, ShoppingListService, DovolenkaService],
 })
 export class AppModule { }
